@@ -173,7 +173,10 @@ final class RunModel {
 
             let worker = FrameWorker(segmenter: segmenter)
             worker.publish = { @Sendable [weak self] result in
-                Task { @MainActor in self?.apply(result) }
+                // Bind before the Task: a `weak self` capture is a var, and referencing a
+                // captured var from concurrently-executing code is an error in Swift 6.
+                guard let self else { return }
+                Task { @MainActor in self.apply(result) }
             }
             worker.attach(to: camera)
             self.worker = worker

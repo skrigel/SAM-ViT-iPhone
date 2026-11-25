@@ -127,7 +127,10 @@ enum ComputePlanDump {
 
 // MARK: - Report types
 
-enum ComputeDeviceKind: String, CaseIterable, Sendable {
+// These are inert value types produced off the main actor; `nonisolated` opts them out
+// of the target's default MainActor isolation so their members can be used from anywhere.
+
+nonisolated enum ComputeDeviceKind: String, CaseIterable, Sendable {
     case cpu = "CPU"
     case gpu = "GPU"
     case neuralEngine = "ANE"
@@ -143,7 +146,7 @@ enum ComputeDeviceKind: String, CaseIterable, Sendable {
     }
 }
 
-struct OperationPlacement: Sendable {
+nonisolated struct OperationPlacement: Sendable {
     let index: Int
     let operatorName: String
     let outputName: String
@@ -153,7 +156,7 @@ struct OperationPlacement: Sendable {
     let costWeight: Double?
 }
 
-struct PlacementReport: Sendable {
+nonisolated struct PlacementReport: Sendable {
     let computeUnits: MLComputeUnits
     let operations: [OperationPlacement]
 
@@ -181,7 +184,7 @@ struct PlacementReport: Sendable {
     }
 }
 
-struct FeatureSummary: Sendable {
+nonisolated struct FeatureSummary: Sendable {
     let name: String
     let type: String
     /// Human-readable shape constraint — this is what answers DESIGN.md §11 Q2.
@@ -252,12 +255,12 @@ struct FeatureSummary: Sendable {
     }
 }
 
-struct ModelInterface: Sendable {
+nonisolated struct ModelInterface: Sendable {
     let inputs: [FeatureSummary]
     let outputs: [FeatureSummary]
 }
 
-struct ModelInspection: Sendable, Identifiable {
+nonisolated struct ModelInspection: Sendable, Identifiable {
     let modelName: String
     let interface: ModelInterface
     let placements: [PlacementReport]
