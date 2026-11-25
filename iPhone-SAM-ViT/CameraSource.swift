@@ -1,5 +1,8 @@
 import AVFoundation
 import CoreVideo
+import os
+
+let camLog = Logger(subsystem: "iPhone-SAM-ViT", category: "camera")
 
 /// Camera feed. Hands each frame to `onFrame` on a background queue. AVFoundation drops
 /// frames that arrive while one is still being processed; `onDrop` reports each one.
@@ -15,19 +18,25 @@ final class CameraSource: NSObject, @unchecked Sendable {
     private let frameQueue = DispatchQueue(label: "camera.frames", qos: .userInitiated)
     private let output = AVCaptureVideoDataOutput()
     private var device: AVCaptureDevice?
+    fileprivate var frameCount = 0
 
     func start() async throws {
+        camLog.error("start() called, authStatus=\(AVCaptureDevice.authorizationStatus(for: .video).rawValue)")
         guard await AVCaptureDevice.requestAccess(for: .video) else {
+            camLog.error("requestAccess returned FALSE -> accessDenied")
             throw CameraError.accessDenied
         }
+        camLog.error("requestAccess granted")
         // Configure + startRunning both block; do them on the session queue.
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             sessionQueue.async {
                 do {
                     try self.configureIfNeeded()
                     if !self.session.isRunning { self.session.startRunning() }
+                    camLog.error("session.isRunning=\(self.session.isRunning) inputs=\(self.session.inputs.count) outputs=\(self.session.outputs.count)")
                     continuation.resume()
                 } catch {
+                    camLog.error("configure/start threw: \(error.localizedDescription)")
                     continuation.resume(throwing: error)
                 }
             }
@@ -64,9 +73,12 @@ final class CameraSource: NSObject, @unchecked Sendable {
 
         session.sessionPreset = .hd1280x720
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        let found = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        camLog.error("default back wide camera: \(found?.localizedName ?? "NIL")")
+        guard let device = found,
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
+            camLog.error("noCamera: device/input/canAddInput failed")
             throw CameraError.noCamera
         }
         session.addInput(input)
@@ -109,6 +121,10 @@ extension CameraSource: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        frameCount += 1
+        if frameCount % 30 == 1 {
+            camLog.error("frame #\(self.frameCount) \(CVPixelBufferGetWidth(buffer))x\(CVPixelBufferGetHeight(buffer)) onFrame=\(self.onFrame == nil ? "NIL" : "set")")
+        }
         onFrame?(buffer)
     }
 

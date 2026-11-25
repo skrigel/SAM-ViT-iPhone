@@ -1,10 +1,3 @@
-//
-//  FrameWorker.swift
-//  iPhone-SAM-ViT
-//
-//  Created by Sasha Krigel on 11/25/26.
-//
-
 import CoreGraphics
 import CoreVideo
 import Foundation
@@ -33,7 +26,12 @@ final class FrameWorker: @unchecked Sendable {
     /// Below this predicted IoU, keep the old box instead of following the mask (likely lost).
     var minIoUToTrack: Float = 0.5
     /// Grow each tracked box a little so a moving object stays inside the next prompt.
-    var boxMargin: CGFloat = 0.05
+    /// Keep this small: when the mask just fills the prompt box, the margin compounds every frame.
+    var boxMargin: CGFloat = 0.02
+    /// Reject an update whose area changes by more than this factor in one frame (runaway / lost).
+    var maxAreaChange: CGFloat = 1.25
+    /// Reject an update that covers more than this fraction of the frame.
+    var maxFrameCoverage: CGFloat = 0.6
 
     private let segmenter: Segmenter
     private let lock = NSLock()
@@ -68,7 +66,16 @@ final class FrameWorker: @unchecked Sendable {
             let encodeMS = try segmenter.encode(buffer)        // TODO(D): gate with StridePolicy.shouldEncode
             let decoded = try segmenter.decode(box: current)
 
-            if decoded.iou >= minIoUToTrack, !decoded.box.isEmpty {
+            let frameArea = size.width * size.height
+            let oldArea = max(current.width * current.height, 1)
+            let newArea = decoded.box.width * decoded.box.height
+            let plausible = decoded.iou >= minIoUToTrack
+                && !decoded.box.isEmpty
+                && newArea <= oldArea * maxAreaChange
+                && newArea >= oldArea / maxAreaChange
+                && newArea <= frameArea * maxFrameCoverage
+
+            if plausible {
                 let next = decoded.box
                     .insetBy(dx: -boxMargin * decoded.box.width, dy: -boxMargin * decoded.box.height)
                     .intersection(CGRect(origin: .zero, size: size))
