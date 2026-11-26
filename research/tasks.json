@@ -75,8 +75,8 @@
    "id": "decoder-fixed-shape",
    "priority": 2,
    "title": "Fixed-shape decoder export so the decoder can leave the CPU (app decoder: 220/220 ops on CPU)",
-   "status": "todo",
-   "notes": ""
+   "status": "done",
+   "notes": "SAMPromptDecoderFixed: 43 ms CPU -> 1.6 ms GPU, same accuracy; opt-in via Segmenter.fixedDecoderURL"
   },
   {
    "id": "coreai-ane-flaky",
@@ -89,8 +89,8 @@
    "id": "l2-xl0-anefix",
    "priority": 3,
    "title": "Apply ExpForm + linear resize to L2/XL0 and evaluate on ANE",
-   "status": "todo",
-   "notes": ""
+   "status": "in_progress",
+   "notes": "L2 done (9.5 -> 83.65 on dev); XL0 todo"
   },
   {
    "id": "metal-kernels",

@@ -51,13 +51,22 @@ final class Segmenter: @unchecked Sendable {
         Bundle.main.url(forResource: "SAMImageEncoderANE", withExtension: "mlmodelc")
     }
 
+    /// Fixed-shape decoder (Models/SAMPromptDecoderFixed.mlpackage, research/tools/convert_decoder_app.py), same interface
+    /// as SAMPromptDecoder. The bundled decoder's flexible point shapes keep all of its ops on the CPU whatever
+    /// `computeUnits` says (~43 ms per decode on an M5 Pro). This one runs on the GPU in ~1.6 ms with the same masks
+    /// (COCO box mIoU 85.90 vs 85.92). Use it with `decoderUnits: .cpuAndGPU`.
+    static var fixedDecoderURL: URL? {
+        Bundle.main.url(forResource: "SAMPromptDecoderFixed", withExtension: "mlmodelc")
+    }
+
     /// Each model gets its own compute units so placement is an explicit experiment knob.
     /// `encoderURL`: optional variant (e.g. ReLU or int8 encoder imported into Documents)
-    /// with the same interface; `nil` uses the bundled SAMImageEncoder.
+    /// with the same interface; `nil` uses the bundled SAMImageEncoder. `decoderURL` likewise for the decoder.
     func load(
         encoderUnits: MLComputeUnits = .cpuAndGPU,
         decoderUnits: MLComputeUnits = .all,
-        encoderURL: URL? = nil
+        encoderURL: URL? = nil,
+        decoderURL: URL? = nil
     ) async throws {
         let encoderConfig = MLModelConfiguration()
         encoderConfig.computeUnits = encoderUnits
@@ -74,7 +83,14 @@ final class Segmenter: @unchecked Sendable {
             encoder = try await SAMImageEncoder.load(configuration: encoderConfig)
             encoderName = "SAMImageEncoder"
         }
-        decoder = try await SAMPromptDecoder.load(configuration: decoderConfig)
+        if let decoderURL {
+            let compiled = decoderURL.pathExtension == "mlmodelc"
+                ? decoderURL
+                : try await MLModel.compileModel(at: decoderURL)
+            decoder = try SAMPromptDecoder(contentsOf: compiled, configuration: decoderConfig)
+        } else {
+            decoder = try await SAMPromptDecoder.load(configuration: decoderConfig)
+        }
 
         var buffer: CVPixelBuffer?
         let attributes = [kCVPixelBufferIOSurfacePropertiesKey as String: [String: Any]()] as CFDictionary

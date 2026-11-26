@@ -2,8 +2,8 @@
  "unit": "cpu",
  "n": 200,
  "ref_mIoU": 84.10660313697444,
- "mask0_mIoU": 84.06838094554978,
- "argmax_mIoU": 85.92018919154462,
- "mask0_vs_torch_iou": 0.9984802868874035,
- "mask0_vs_torch_min": 0.9581963363081258
+ "mask0_mIoU": 84.05026225363508,
+ "argmax_mIoU": 85.90103710962002,
+ "mask0_vs_torch_iou": 0.9974715050864174,
+ "mask0_vs_torch_min": 0.8802254579614842
 }

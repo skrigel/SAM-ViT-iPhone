@@ -2,8 +2,8 @@
  "unit": "ane",
  "n": 200,
  "ref_mIoU": 84.10660313697444,
- "mask0_mIoU": 84.06838094554978,
- "argmax_mIoU": 85.92018919154462,
- "mask0_vs_torch_iou": 0.9984802868874035,
- "mask0_vs_torch_min": 0.9581963363081258
+ "mask0_mIoU": 84.40401425962253,
+ "argmax_mIoU": 86.06901688218457,
+ "mask0_vs_torch_iou": 0.9845656998256235,
+ "mask0_vs_torch_min": 0.7409326424870466
 }

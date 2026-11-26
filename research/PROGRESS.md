@@ -23,7 +23,7 @@ against the fp32 per-image IoUs are ~0.1 for good models.
 | **Core AI, same ANE-safe model** | **ANE** | **83.69** | **+0.13** | 0.9984 | **10.9 ms** | **90 mJ** |
 | Core AI, same model | GPU | — | — | — | 4.6 ms | 210 mJ |
 
-The ANE-safe model is in the app as `iPhone-SAM-ViT/Models/SAMImageEncoderANE.mlpackage` (same I/O as
+Both new models are in the app; the default placement is unchanged. The ANE-safe encoder is `iPhone-SAM-ViT/Models/SAMImageEncoderANE.mlpackage` (same I/O as
 `SAMImageEncoder`). Opt in with `segmenter.load(encoderUnits: .cpuAndNeuralEngine, encoderURL: Segmenter.aneEncoderURL)`.
 On the Mac it uses 1.6–2.3× less energy per frame than the GPU path at 2–3× the latency. Whether that trade is right
 for the iPhone needs the on-device numbers.
@@ -77,10 +77,14 @@ Fixing either one alone gives 57.7 or 22.1 mIoU.
   each frame cost ~30 ms. Build it once and reuse it (or wrap a camera `CVPixelBuffer`).
 - The ANE-safe GELUs cost nothing on the GPU through Core AI or MPSGraph (4.6 ms), so one model can serve both units.
 
-### Decoder (`tools/eval_decoder.py`)
+### Decoder (`tools/eval_decoder.py`, `tools/decoder_placement.py`, `tools/convert_decoder_app.py`)
 - The app's `SAMPromptDecoder` runs **entirely on the CPU** even with `.all`: all 220 ops, per `MLComputePlan`. Its
-  flexible-shape inputs block GPU/ANE placement. It is accurate (mask-0 mIoU 84.07 vs torch 84.11 on 200 dev images).
-  A fixed-shape export (`convert.DecoderWrapper`) would let it move to the GPU/ANE.
+  flexible-shape point inputs block GPU/ANE placement. It takes **43 ms per decode** on the M5 Pro, more than the encoder.
+- `SAMPromptDecoderFixed.mlpackage` (now in the app) is the same network with a fixed 2-point shape and the same
+  interface. It runs in **1.6 ms on the GPU**, 2.4 ms on the ANE, or 5.0 ms on the CPU. Accuracy on 200 dev images
+  (argmax-mask mIoU): app decoder 85.92; fixed 85.90 on CPU/GPU and 86.07 on the ANE. On the ANE its mask-0
+  agreement with torch is lower (0.985, min 0.74 vs 0.999 on GPU), so use the GPU for it:
+  `load(decoderUnits: .cpuAndGPU, decoderURL: Segmenter.fixedDecoderURL)`.
 - The app picks the mask with the highest predicted IoU. For box prompts that beats SAM's recommended single mask
   by +1.8 mIoU (85.92 vs 84.07), so keep it.
 
@@ -93,8 +97,9 @@ its only remaining payoff is ANE latency (stock-like ~8 ms instead of 11–13 ms
 ### Next
 1. Run `RuntimeBench` and the ANE model on the iPhone 17 Pro (latency, energy, thermal); decide GPU vs ANE.
 2. Finish/evaluate the ReLU student (`eval_coco.py --student work/students/relu_150m.pt`), then convert it and time it on the ANE.
-3. Fixed-shape decoder so it can leave the CPU.
-4. Try the ExpForm fix on L2/XL0 (L2 has 959× BN gains).
+3. On device: the opt-in line in `RunView.prepare()` switches to the ANE encoder + GPU fixed decoder (builds for iOS 27 Simulator).
+4. XL0 with the ExpForm fix. L2 is done: stock fp16 on the ANE scores 9.5 mIoU, ExpForm in stages 3–4 scores 83.65
+   (fp32 83.79, dev split), at 22.6 ms on the ANE vs 8.0 ms stock on the GPU.
 
 ### Open questions for the team
 - The repo's Xcode project fails to build from the command line (`Multiple commands produce .../Info.plist`):

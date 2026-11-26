@@ -30,3 +30,5 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	df11dc4	app_SAMImageEncoderANE_ane	coreml	ane	eval	500	83.46	83.56	-0.10	0.9985	13.20	keep	shipped in app as SAMImageEncoderANE (= ef_s34, image in, fp16 out)
 2026-11-26	df11dc4	app_SAMImageEncoder_stock_ane	coreml	ane	eval	500	4.46	83.56	-79.10	0.0928		keep	app's existing bundled encoder on ANE: broken
 2026-11-26	df11dc4	coreai_fp16_ef_s34_ane	coreai	ane	eval	500	83.69	83.56	+0.13	0.9984	10.92	keep	Core AI + ExpForm s34 on ANE: best ANE latency/energy
+2026-11-26	76816b5	l2_stock_ane	coreml	ane	dev	150	9.47	83.79	-74.33	0.0384	14.64	keep	L2 stock fp16 on ANE: broken too
+2026-11-26	76816b5	l2_ef_s34_ane	coreml	ane	dev	150	83.65	83.79	-0.14	0.9957	22.58	keep	L2 + ExpForm s34 + linear resize: fix transfers (GPU stock 7.6 ms)

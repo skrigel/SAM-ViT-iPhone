@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreML
 import SwiftUI
 
 /// The measurement screen: live camera with the mask overlaid, drag a box (or tap) to prompt,
@@ -169,8 +170,10 @@ final class RunModel {
         do {
             let segmenter = Segmenter()
             try await segmenter.load()   // pass encoderURL: to try a variant from Documents
-            // Encoder on the Neural Engine (accurate in fp16 only with the ANE-safe model):
-            // try await segmenter.load(encoderUnits: .cpuAndNeuralEngine, encoderURL: Segmenter.aneEncoderURL)
+            // Encoder on the Neural Engine (accurate in fp16 only with the ANE-safe model) and the fixed-shape decoder
+            // on the GPU (the bundled decoder is stuck on the CPU). See research/PROGRESS.md:
+            // try await segmenter.load(encoderUnits: .cpuAndNeuralEngine, decoderUnits: .cpuAndGPU,
+            //                          encoderURL: Segmenter.aneEncoderURL, decoderURL: Segmenter.fixedDecoderURL)
             modelName = segmenter.encoderName
 
             let worker = FrameWorker(segmenter: segmenter)

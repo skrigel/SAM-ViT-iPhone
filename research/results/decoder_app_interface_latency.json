@@ -1,0 +1,50 @@
+{
+ "app_flexible/cpu": {
+  "placement": {
+   "CPU": 220
+  },
+  "ms_median": 43.28102050931193
+ },
+ "app_flexible/gpu": {
+  "placement": {
+   "CPU": 220
+  },
+  "ms_median": 43.23587499675341
+ },
+ "app_flexible/ane": {
+  "placement": {
+   "CPU": 220
+  },
+  "ms_median": 43.21743750188034
+ },
+ "app_flexible/all": {
+  "placement": {
+   "CPU": 220
+  },
+  "ms_median": 43.29829201742541
+ },
+ "fixed_app_interface/cpu": {
+  "placement": {
+   "CPU": 228
+  },
+  "ms_median": 4.98120799602475
+ },
+ "fixed_app_interface/gpu": {
+  "placement": {
+   "GPU": 228
+  },
+  "ms_median": 1.6103755042422563
+ },
+ "fixed_app_interface/ane": {
+  "placement": {
+   "NeuralEngine": 228
+  },
+  "ms_median": 2.422145495074801
+ },
+ "fixed_app_interface/all": {
+  "placement": {
+   "NeuralEngine": 228
+  },
+  "ms_median": 2.375937983742915
+ }
+}
