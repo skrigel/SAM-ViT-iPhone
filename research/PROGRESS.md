@@ -88,7 +88,7 @@ Fixing either one alone gives 57.7 or 22.1 mIoU.
 - The app picks the mask with the highest predicted IoU. For box prompts that beats SAM's recommended single mask
   by +1.8 mIoU (85.92 vs 84.07), so keep it.
 
-### ReLU distillation (proposal 4.1), in progress
+### ReLU distillation (proposal 4.1)
 `tools/train_distill.py`: GELU → ReLU everywhere, L2 to the teacher embedding, COCO train2017, batch 8, fixed wall-clock budget
 on the M5 Pro GPU. Lessons so far:
 - BatchNorm in train mode at batch 8: the training-batch cosine reached 0.97, but in inference mode the student scored
@@ -100,12 +100,23 @@ on the M5 Pro GPU. Lessons so far:
 - That 120-minute run only got through **790 steps**: the Mac went into idle sleep at 01:37 and the wall-clock budget
   ran out while it slept. Result on the dev split: **78.43 mIoU (−4.83 vs fp32), embedding cosine 0.932**, still climbing.
   It needs a rerun with the machine kept awake (`caffeinate -i`): ~13k steps fit in 2 h.
-- The exact rewrites already give cosine 0.998 with no training, so this route only pays off if it reaches that and
-  then runs at stock ANE latency (~8 ms vs 11–13 ms).
+- **Rerun awake (caffeinate, 120 min, 13.4k steps, final loss 5.7e-4):**
+
+  | ReLU student | split | mIoU | Δ vs fp32 | cos | ANE p50 |
+  |---|---|---|---|---|---|
+  | torch fp32 | dev 150 | 82.28 | −0.99 | 0.974 | |
+  | torch fp32 | eval 500 | 82.55 | −1.00 | 0.973 | |
+  | Core ML fp16, ANE | eval 500 | 81.02 | −2.54 | 0.953 | 8.34 ms |
+  | *ExpForm s34 (no training), Core ML ANE* | eval 500 | 83.46 | −0.10 | 0.998 | 13.2 ms |
+
+  The student is fast on the ANE (stock latency, no GELU at all), but it loses 1 mIoU to distillation and another
+  1.5 to ANE fp16 rounding. Its stage-3 BNs still have high gains, so fp16 error is amplified there, as with GELU.
+  Verdict: ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
+  regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 
 ### Next
 1. Run `RuntimeBench` and the ANE model on the iPhone 17 Pro (latency, energy, thermal); decide GPU vs ANE.
-2. Finish/evaluate the ReLU student (`eval_coco.py --student work/students/relu_150m.pt`), then convert it and time it on the ANE.
+2. ReLU student: optional fp16-aware fine-tune (train through `.half()` simulation) to close the 1.5-point ANE gap.
 3. On device: the opt-in line in `RunView.prepare()` switches to the ANE encoder + GPU fixed decoder (builds for iOS 27 Simulator).
 4. XL0 with the ExpForm fix. L2 is done: stock fp16 on the ANE scores 9.5 mIoU, ExpForm in stages 3–4 scores 83.65
    (fp32 83.79, dev split), at 22.6 ms on the ANE vs 8.0 ms stock on the GPU.

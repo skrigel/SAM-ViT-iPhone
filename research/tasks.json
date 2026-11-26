@@ -40,8 +40,8 @@
    "id": "relu-distill",
    "priority": 2,
    "title": "Proposal 4.1: ReLU student distilled from the GELU teacher (L2 on embeddings), fixed wall-clock budget",
-   "status": "in_progress",
-   "notes": "790-step run (Mac slept): 78.43 mIoU dev, cos 0.932. Rerun under caffeinate."
+   "status": "done",
+   "notes": "120-min awake run: torch 82.55 (-1.00), Core ML ANE fp16 81.02 (-2.54) at 8.34 ms. ExpForm (83.46, 13.2 ms) stays default."
   },
   {
    "id": "coreai-convert",

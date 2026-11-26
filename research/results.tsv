@@ -38,3 +38,6 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	6d33d67	fusedmb_dev	coreai	gpu	dev	150	83.09	83.27	-0.18	0.9996		keep	fused MBConv Metal kernels (8 blocks, MPP matmul2d), Core AI GPU
 2026-11-26	6d33d67	fusedmb_full	coreai	gpu	eval	500	83.45	83.56	-0.11	0.9996		keep	fused MBConv kernels, full eval: accurate (cos 0.99956 vs stock 0.9994)
 2026-11-26	6d33d67	split_s2_fused	coreai-split	ane,gpu	dev	150	83.07	83.27	-0.19	0.9994		keep	manual split: stages 0-2 Core AI ANE -> rest Core AI GPU with fused MBConv
+2026-11-26	79a33a3	relu_distill_awake_120m	torch	gpu	dev	150	82.28	83.27	-0.99	0.9737		keep	ReLU student, 120 min awake (13.4k steps, BN recal+frozen, lr 3e-5): torch fp32 dev
+2026-11-26	79a33a3	relu_distill_awake_120m	torch	gpu	eval	500	82.55	83.56	-1.00	0.9733		keep	ReLU student 120 min awake, torch fp32 full eval: -1.00, cos 0.973
+2026-11-26	79a33a3	relu_distill_awake_120m_ane	coreml	ane	eval	500	81.02	83.56	-2.54	0.9531	8.34	discard	ReLU student, Core ML fp16 ANE: -2.54 (cos 0.953) at 8.34 ms p50; ExpForm is -0.10 at 13.2 ms

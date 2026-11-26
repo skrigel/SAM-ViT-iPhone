@@ -1,0 +1,87 @@
+{
+ "idle_power_w": {
+  "cpu_power": 1.958353142857143,
+  "gpu_power": 0.023527,
+  "ane_power": 0.3432187142857143,
+  "ram_power": 0.3907599428571429,
+  "all_power": 3.764922657142857
+ },
+ "coreai_fp16_stock/coreai/gpu": {
+  "first_ms": 47.614666,
+  "iters": 1857,
+  "latency_ms": {
+   "mean": 4.310117821217015,
+   "min": 4.146583,
+   "p10": 4.234375,
+   "p50": 4.28775,
+   "p90": 4.365917
+  },
+  "load_attempts": 1,
+  "load_ms": 146.250291,
+  "model": "EViTSAM_Encoder_l0_fp16.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.004147209,
+  "power_w": {
+   "cpu_power": 3.1067917945205483,
+   "gpu_power": 37.09542487671233,
+   "ane_power": 0.5419838767123287,
+   "ram_power": 2.2749613561643836,
+   "all_power": 51.44411869863014
+  },
+  "power_delta_w": {
+   "cpu_power": 1.1484386516634053,
+   "gpu_power": 37.07189787671233,
+   "ane_power": 0.1987651624266144,
+   "ram_power": 1.8842014133072407,
+   "all_power": 47.67919604148729
+  },
+  "energy_mj": {
+   "cpu_power": 4.950065712665249,
+   "gpu_power": 159.78940652785133,
+   "ane_power": 0.8567289284240264,
+   "ram_power": 8.121392290531505,
+   "all_power": 205.5095874651773
+  }
+ },
+ "coreai_fp16_fusedmb/coreai/gpu": {
+  "first_ms": 465.597833,
+  "iters": 1006,
+  "latency_ms": {
+   "mean": 7.956317006958252,
+   "min": 7.726083,
+   "p10": 7.831875,
+   "p50": 7.89775,
+   "p90": 8.179584
+  },
+  "load_attempts": 1,
+  "load_ms": 683.71225,
+  "model": "EViTSAM_Encoder_l0_fp16_fusedmb.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.004282250000001,
+  "power_w": {
+   "cpu_power": 2.2489247808219175,
+   "gpu_power": 29.63173501369863,
+   "ane_power": 0.37972327397260275,
+   "ram_power": 1.529111301369863,
+   "all_power": 40.10077032876712
+  },
+  "power_delta_w": {
+   "cpu_power": 0.2905716379647745,
+   "gpu_power": 29.60820801369863,
+   "ane_power": 0.03650455968688843,
+   "ram_power": 1.13835135851272,
+   "all_power": 36.335847671624265
+  },
+  "energy_mj": {
+   "cpu_power": 2.311945729736452,
+   "gpu_power": 235.57897997848482,
+   "ane_power": 0.2904500985544996,
+   "ram_power": 9.057341524062378,
+   "all_power": 289.10773415177533
+  }
+ }
+}
