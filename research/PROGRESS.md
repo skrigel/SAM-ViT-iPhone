@@ -110,7 +110,7 @@ on the M5 Pro GPU. Lessons so far:
   | *ExpForm s34 (no training), Core ML ANE* | eval 500 | 83.46 | −0.10 | 0.998 | 13.2 ms |
 
   The student is fast on the ANE (stock latency, no GELU at all), but it loses 1 mIoU to distillation and another
-  1.5 to ANE fp16 rounding. Its stage-3 BNs still have high gains, so fp16 error is amplified there, as with GELU.
+  1.5 to ANE fp16 rounding (not yet localised; the high-gain stage-3 BNs that amplified GELU error are the first suspect).
   Verdict: ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
   regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 
