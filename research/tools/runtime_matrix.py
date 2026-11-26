@@ -9,7 +9,7 @@ import argparse, json, os, re, statistics, subprocess, threading, time
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BENCH = os.path.join(HERE, "work", "runtimebench")
-M = lambda n: os.path.join(HERE, "work", "models", n)  # noqa: E731
+M = lambda n: ",".join(os.path.join(HERE, "work", "models", p) for p in n.split(","))  # noqa: E731  ("A,B" for splits)
 RAILS = ["cpu_power", "gpu_power", "ane_power", "ram_power", "all_power"]
 
 CASES = [
@@ -35,6 +35,25 @@ CASES = [
     ("mpsgraph_fp16_ef_s34", "mpsgraph", "gpu", "EViTSAM_Encoder_l0_fp16_ef_s34.mlpackage"),
     ("mpsgraph_fp16_stock", "mpsgraph", "gpu", "EViTSAM_Encoder_l0_fp16_tensor.mlpackage"),
     ("mpsgraph_fp16_anefix", "mpsgraph", "gpu", "EViTSAM_Encoder_l0_fp16_anefix_tensor.mlpackage"),
+]
+
+
+# Fused-kernel milestone: everything on one quiet machine, same window length.
+FUSED_CASES = [
+    ("coreai_fp16_stock", "coreai", "gpu", "EViTSAM_Encoder_l0_fp16.aimodel"),
+    ("coreai_fp16_fusedmb", "coreai", "gpu", "EViTSAM_Encoder_l0_fp16_fusedmb.aimodel"),
+    ("coreml_fp16_stock", "coreml", "gpu", "EViTSAM_Encoder_l0_fp16_tensor.mlpackage"),
+    ("coreml_fp16_stock", "coreml", "all", "EViTSAM_Encoder_l0_fp16_tensor.mlpackage"),
+    ("mpsgraph_fp16_stock", "mpsgraph", "gpu", "EViTSAM_Encoder_l0_fp16_tensor.mlpackage"),
+    ("coreai_fp16_ef_s34", "coreai", "ane", "EViTSAM_Encoder_l0_fp16_ef_s34.aimodel"),
+    ("split_s2_stock", "coreai-split", "ane,gpu", "EViTSAM_EncA_s2.aimodel,EViTSAM_EncB_s2.aimodel"),
+    ("split_s2_stock", "coreai-split-pipe", "ane,gpu", "EViTSAM_EncA_s2.aimodel,EViTSAM_EncB_s2.aimodel"),
+    ("split_s2_fused", "coreai-split", "ane,gpu", "EViTSAM_EncA_s2_fused.aimodel,EViTSAM_EncB_s2_fused.aimodel"),
+    ("split_s2_fused", "coreai-split-pipe", "ane,gpu", "EViTSAM_EncA_s2_fused.aimodel,EViTSAM_EncB_s2_fused.aimodel"),
+    ("blk_s3_stock", "coreai", "gpu", "blk_s3_stock.aimodel"),
+    ("blk_s3_fused", "coreai", "gpu", "blk_s3_fused.aimodel"),
+    ("blk_s4_stock", "coreai", "gpu", "blk_s4_stock.aimodel"),
+    ("blk_s4_fused", "coreai", "gpu", "blk_s4_fused.aimodel"),
 ]
 
 
@@ -67,6 +86,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--duration", type=float, default=8)
     ap.add_argument("--only", default="")
+    ap.add_argument("--out", default="runtime_matrix.json")
     ap.add_argument("--extra", nargs=4, action="append", default=[], metavar=("LABEL", "RUNTIME", "UNIT", "MODEL"))
     args = ap.parse_args()
     # Pause any distillation run (GPU) for the whole matrix so it does not skew latency or power.
@@ -78,20 +98,24 @@ def main():
 
 
 def run(args):
-    path = os.path.join(HERE, "results", "runtime_matrix.json")
+    path = os.path.join(HERE, "results", args.out)
     out = json.load(open(path)) if os.path.exists(path) else {}
     with Power() as p:
         time.sleep(4)
         idle = p.mean(time.time() - 3.5, time.time())
     out["idle_power_w"] = idle
-    for label, rt, unit, model in CASES + [tuple(e) for e in args.extra]:
+    cases = FUSED_CASES if args.only == "FUSED" else CASES + [tuple(e) for e in args.extra]
+    for label, rt, unit, model in cases:
         key = f"{label}/{rt}/{unit}"
-        if not re.search(args.only, key):
+        if args.only != "FUSED" and not re.search(args.only, key):
             continue
         time.sleep(2)  # let clocks settle between cases
         env = dict(os.environ, DURATION=str(args.duration))
+        if rt.endswith("-pipe"):  # coreai-split-pipe: steady-state pipelined steps (A on frame i+1 || B on frame i)
+            rt, env["PIPELINE"] = rt[: -len("-pipe")], "1"
         with Power() as p:
             r = subprocess.run([BENCH, rt, unit, M(model)], capture_output=True, text=True, env=env)
+            rt = rt + ("-pipe" if env.get("PIPELINE") == "1" else "")
             t1 = time.time()
         try:
             d = json.loads(r.stdout.strip().splitlines()[-1])

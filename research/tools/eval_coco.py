@@ -126,6 +126,23 @@ class CoreAIEncoder:
         return np.asarray(list(out.values())[0].numpy(), np.float32)
 
 
+class CoreAISplitEncoder:
+    """Two Core AI models (tools/split_encoder.py): A's outputs feed B's inputs in order. unit = "ane,gpu" etc."""
+
+    def __init__(self, paths, units):
+        pa, pb = paths.split(",")
+        ua, ub = (units.split(",") + [units])[:2] if "," in units else (units, units)
+        self.a, self.b = CoreAIEncoder(pa, ua), CoreAIEncoder(pb, ub)
+
+    def __call__(self, x):
+        a = self.a
+        out = a.loop.run_until_complete(a.f({a.name: a.rt.NDArray(np.ascontiguousarray(x, a.dtype))}))
+        feats = [out[n] for n in a.f.desc.output_names]
+        b = self.b
+        res = b.loop.run_until_complete(b.f(dict(zip(b.f.desc.input_names, feats))))
+        return np.asarray(list(res.values())[0].numpy(), np.float32)
+
+
 # ---------------------------------------------------------------- scoring
 
 @torch.no_grad()
@@ -142,10 +159,10 @@ def decode(dec, sam, emb, row, size):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--backend", choices=["torch", "coreml", "coreai"], default="torch")
+    ap.add_argument("--backend", choices=["torch", "coreml", "coreai", "coreai-split"], default="torch")
     ap.add_argument("--encoder", help="mlpackage / aimodel path")
     ap.add_argument("--student", help="torch: path to a pickled encoder nn.Module (pixels in, embedding out)")
-    ap.add_argument("--unit", default="gpu", choices=["cpu", "gpu", "ane", "all"])
+    ap.add_argument("--unit", default="gpu", help="cpu|gpu|ane|all; coreai-split: '<unit A>,<unit B>'")
     ap.add_argument("--model", default="l0")
     ap.add_argument("--split", default="eval", choices=["eval", "dev"])
     ap.add_argument("--n", type=int, default=500)
@@ -161,8 +178,10 @@ def main():
         enc = TorchEncoder(sam, args.student)
     elif args.backend == "coreml":
         enc = CoreMLEncoder(args.encoder, args.unit)
-    else:
+    elif args.backend == "coreai":
         enc = CoreAIEncoder(args.encoder, args.unit)
+    else:
+        enc = CoreAISplitEncoder(args.encoder, args.unit)
 
     rows = split(args.split)[: args.n]
     ious, ref_ious, coss, times = [], [], [], []

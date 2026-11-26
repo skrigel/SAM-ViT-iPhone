@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--student")
     ap.add_argument("--gelu", default="native", choices=["native", "clenshaw", "tanhform", "expform"])
     ap.add_argument("--gelu-where", default="")
+    ap.add_argument("--fuse-mbconv", default=None, help="regex: replace matching stride-1 MBConv blocks with the fused "
+                    "Metal kernels in kernels/fused_mbconv.py ('' = all eligible)")
     ap.add_argument("--name")
     args = ap.parse_args()
 
@@ -49,6 +51,14 @@ def main():
 
     size = INPUT_SIZE[args.model]
     enc = build(args.model, args.anefix, args.student, args.gelu, args.gelu_where)
+    kernels = []
+    if args.fuse_mbconv is not None:
+        import re
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kernels"))
+        from fused_mbconv import KERNELS, fuse_mbconvs
+        done = fuse_mbconvs(enc, where=lambda n: re.search(args.fuse_mbconv, n) is not None)
+        print(f"fused {len(done)} MBConv blocks: {done}")
+        kernels = KERNELS
     x = torch.rand(1, 3, size, size) * 255
     with torch.no_grad():
         enc(x)  # warm SeparableResize caches so export sees constants
@@ -64,7 +74,7 @@ def main():
             return self.m(image)
 
     ep = torch.export.export(Named(enc).eval(), (x,)).run_decompositions(get_decomp_table())
-    prog = TorchConverter().add_exported_program(ep).to_coreai()
+    prog = TorchConverter().register_custom_kernels(kernels).add_exported_program(ep).to_coreai()
     name = args.name or f"{args.model}_{args.precision}" + ("_anefix" if args.anefix else "") + ("" if args.gelu == "native" else f"_{args.gelu}")
     out = pathlib.Path(ROOT) / "models" / f"EViTSAM_Encoder_{name}.aimodel"
     shutil.rmtree(out, ignore_errors=True)

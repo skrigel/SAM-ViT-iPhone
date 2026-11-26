@@ -90,6 +90,51 @@ final class CoreAIRunner: Runner {
     }
 }
 
+// MARK: Core AI split (GPU + ANE pipeline)
+
+/// Two Core AI models from tools/split_encoder.py: A (e.g. on the ANE) feeds B (e.g. on the GPU), outputs to inputs in order.
+/// run() is one frame end to end. runPipelined() overlaps A on frame i+1 with B on frame i, as a camera loop would.
+final class CoreAISplitRunner: Runner, @unchecked Sendable {
+    let a: CoreAIRunner
+    let fb: InferenceFunction
+    let outNamesA: [String]
+    let inNamesB: [String]
+    var pending: [NDArray]? = nil
+
+    init(paths: String, units: String) async throws {
+        let p = paths.split(separator: ",").map(String.init)
+        let u = units.split(separator: ",").map(String.init)
+        a = try await CoreAIRunner(path: p[0], unit: u[0])
+        let kind: ComputeUnitKind = ["cpu": .cpu, "gpu": .gpu, "ane": .neuralEngine][u.count > 1 ? u[1] : u[0]] ?? .gpu
+        let mb = try await AIModel(contentsOf: URL(fileURLWithPath: p[1]),
+                                   options: SpecializationOptions(preferredComputeUnitKind: kind))
+        fb = try mb.loadFunction(named: "main")!
+        outNamesA = Array(a.function.descriptor.outputNames)
+        inNamesB = Array(fb.descriptor.inputNames)
+    }
+
+    func runA() async throws -> [NDArray] {
+        var o = try await a.function.run(inputs: [a.inputName: a.input])
+        return outNamesA.map { o.remove($0)!.ndArray! }
+    }
+
+    func runB(_ feats: [NDArray]) async throws {
+        _ = try await fb.run(inputs: Dictionary(uniqueKeysWithValues: zip(inNamesB, feats)))
+    }
+
+    func run() async throws { try await runB(try await runA()) }
+
+    /// One steady-state pipeline step: B(previous frame) concurrently with A(this frame).
+    func runPipelined() async throws {
+        if pending == nil { pending = try await runA() }
+        let prev = pending!
+        async let b: Void = runB(prev)
+        let next = try await runA()
+        try await b
+        pending = next
+    }
+}
+
 // MARK: MPSGraph (Metal)
 
 final class MPSGraphRunner: Runner {
@@ -129,7 +174,7 @@ struct Main {
     static func main() async throws {
         let a = CommandLine.arguments
         guard a.count >= 4 else {
-            FileHandle.standardError.write("usage: runtimebench <coreml|coreai|mpsgraph> <cpu|gpu|ane|all> <model> [iters] [warmup]\n".data(using: .utf8)!)
+            FileHandle.standardError.write("usage: runtimebench <coreml|coreai|coreai-split|mpsgraph> <cpu|gpu|ane|all|unitA,unitB> <model|A,B> [iters] [warmup]\n".data(using: .utf8)!)
             exit(2)
         }
         let (runtime, unit, path) = (a[1], a[2], a[3])
@@ -154,26 +199,31 @@ struct Main {
                 }
             }
             loadAttempts = attempt
+        case "coreai-split": r = try await CoreAISplitRunner(paths: path, units: unit)
         default: r = try MPSGraphRunner(path: path)
         }
+        // PIPELINE=1 (coreai-split only): time steady-state pipeline steps (= 1 / throughput) instead of end-to-end frames.
+        let pipelined = ProcessInfo.processInfo.environment["PIPELINE"] == "1"
+        let step: () async throws -> Void
+        if pipelined, let sr = r as? CoreAISplitRunner { step = { try await sr.runPipelined() } } else { step = { try await r.run() } }
         let loadMs = ms(now() - t0)
         let t1 = now()
         try await r.run()
         let firstMs = ms(now() - t1)
-        for _ in 0..<warm { try await r.run() }
+        for _ in 0..<warm { try await step() }
         // DURATION=<s>: loop for that long instead of `iters` runs (for power sampling over a steady window).
         let duration = Double(ProcessInfo.processInfo.environment["DURATION"] ?? "0") ?? 0
         var xs: [Double] = []
         let start = now()
         while duration > 0 ? ms(now() - start) < duration * 1000 : xs.count < iters {
             let t = now()
-            try await r.run()
+            try await step()
             xs.append(ms(now() - t))
         }
         let wallS = ms(now() - start) / 1000
         let out: [String: Any] = ["runtime": runtime, "unit": unit, "model": (path as NSString).lastPathComponent,
                                   "load_ms": loadMs, "load_attempts": loadAttempts, "first_ms": firstMs, "iters": xs.count, "wall_s": wallS,
-                                  "latency_ms": stats(xs)]
+                                  "pipelined": pipelined, "latency_ms": stats(xs)]
         let json = try JSONSerialization.data(withJSONObject: out, options: [.sortedKeys])
         print(String(data: json, encoding: .utf8)!)
     }

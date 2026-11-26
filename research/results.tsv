@@ -35,3 +35,6 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	0c4f649	relu_distill_bntrain_step3000	torch	gpu	dev	150	72.97	83.27	-10.30	0.7557		discard	ReLU distill, BN in train mode at batch 8: train-batch cos 0.96 but eval-mode cos 0.76 -> freeze BN
 2026-11-26	0c4f649	relu_distill_bnfrozen_norecal	torch	gpu	dev	150	0.00	83.27	-83.27	nan		crash	frozen BN without recalibration, lr 1e-4: inference cos stuck ~0.53 then NaN at step 800
 2026-11-26	93cfc1c	relu_distill_recal_790steps	torch	gpu	dev	150	78.43	83.27	-4.83	0.9322		keep	ReLU distill, BN recal+frozen, lr 3e-5: only 790 steps (Mac idle-slept at 01:37); cos 0.932
+2026-11-26	6d33d67	fusedmb_dev	coreai	gpu	dev	150	83.09	83.27	-0.18	0.9996		keep	fused MBConv Metal kernels (8 blocks, MPP matmul2d), Core AI GPU
+2026-11-26	6d33d67	fusedmb_full	coreai	gpu	eval	500	83.45	83.56	-0.11	0.9996		keep	fused MBConv kernels, full eval: accurate (cos 0.99956 vs stock 0.9994)
+2026-11-26	6d33d67	split_s2_fused	coreai-split	ane,gpu	dev	150	83.07	83.27	-0.19	0.9994		keep	manual split: stages 0-2 Core AI ANE -> rest Core AI GPU with fused MBConv
