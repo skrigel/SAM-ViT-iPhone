@@ -89,10 +89,17 @@ Fixing either one alone gives 57.7 or 22.1 mIoU.
   by +1.8 mIoU (85.92 vs 84.07), so keep it.
 
 ### ReLU distillation (proposal 4.1), in progress
-`tools/train_distill.py`: GELU → ReLU everywhere, L2 to the teacher embedding, COCO train2017, batch 8, AdamW 1e-4,
-150-minute wall-clock budget on the M5 Pro GPU. Embedding cosine 0.81 at step 50 → 0.969 at step 3000 (loss 7e-4).
-It is far from the ~0.998 the exact rewrites give for free. The training-free fix makes this route optional:
-its only remaining payoff is ANE latency (stock-like ~8 ms instead of 11–13 ms).
+`tools/train_distill.py`: GELU → ReLU everywhere, L2 to the teacher embedding, COCO train2017, batch 8, fixed wall-clock budget
+on the M5 Pro GPU. Lessons so far:
+- BatchNorm in train mode at batch 8: the training-batch cosine reached 0.97, but in inference mode the student scored
+  72.97 mIoU on dev with cosine 0.76 (it learned to lean on batch statistics). Discarded.
+- Frozen BN with the teacher's running stats: the swap changes every BN input distribution, so inference cosine sat at
+  ~0.53 and training went NaN at lr 1e-4. Crashed.
+- **Recipe that trains:** re-estimate BN running stats on 200 batches after the swap, then freeze BN, lr 3e-5, grad clip 1.0.
+  Inference-mode cosine 0.56 → 0.90 in 400 steps (~3.5 min). A 120-minute run is going (`work/students/relu_recal_120m.pt`,
+  checkpoint every 1000 steps). Evaluate with `eval_coco.py --backend torch --student work/students/relu_recal_120m.pt`.
+- The exact rewrites already give cosine 0.998 with no training, so this route only pays off if it reaches that and
+  then runs at stock ANE latency (~8 ms vs 11–13 ms).
 
 ### Next
 1. Run `RuntimeBench` and the ANE model on the iPhone 17 Pro (latency, energy, thermal); decide GPU vs ANE.

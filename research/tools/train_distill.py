@@ -74,6 +74,10 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--wd", type=float, default=0.0)
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--bn", default="frozen", choices=["frozen", "train"],
+                    help="frozen: BatchNorm uses (and keeps) running stats, as at inference; train: batch stats (bad at batch 8)")
+    ap.add_argument("--recalib", type=int, default=200, help="batches used to re-estimate BN running stats before training")
+    ap.add_argument("--clip", type=float, default=1.0)
     ap.add_argument("--tag", required=True)
     args = ap.parse_args()
 
@@ -92,6 +96,7 @@ def main():
         swapped = replace_gelu(student, lambda g: ACTS[args.act](), where=lambda n: re.search(args.where, n) is not None)
         print(f"swapped {len(swapped)} GELUs for {args.act}", flush=True)
     student = student.to(dev).train()
+    bns = [m for m in student.modules() if isinstance(m, nn.modules.batchnorm._BatchNorm)]
     for p in student.parameters():
         p.requires_grad_(True)
     student.mean.requires_grad_(False)
@@ -101,6 +106,30 @@ def main():
     print(f"{len(files)} training images", flush=True)
     loader = torch.utils.data.DataLoader(Images(files, size), batch_size=args.batch, shuffle=True, num_workers=args.workers,
                                          drop_last=True, persistent_workers=True, prefetch_factor=4)
+    if args.recalib and not args.init:
+        # The swapped activation changes every BN input distribution; re-estimate running stats (cumulative average).
+        for m in bns:
+            m.reset_running_stats()
+            m.momentum = None
+        with torch.no_grad():
+            for i, x in enumerate(loader):
+                if i >= args.recalib:
+                    break
+                student(x.to(dev))
+        for m in bns:
+            m.momentum = 0.1
+        print(f"recalibrated BN stats on {args.recalib} batches", flush=True)
+    if args.bn == "frozen":
+        for m in bns:
+            m.eval()
+    with torch.no_grad():
+        x = next(iter(loader)).to(dev)
+        cos0 = F.cosine_similarity(student.eval()(x).flatten(1), teacher(x).flatten(1)).mean().item()
+    student.train()
+    if args.bn == "frozen":
+        for m in bns:
+            m.eval()
+    print(f"inference-mode cosine before training: {cos0:.4f}", flush=True)
     opt = torch.optim.AdamW([p for p in student.parameters() if p.requires_grad], lr=args.lr, weight_decay=args.wd)
 
     out = os.path.join(ROOT, "students")
@@ -125,11 +154,13 @@ def main():
             loss = F.mse_loss(pred, target)
             opt.zero_grad(set_to_none=True)
             loss.backward()
+            if args.clip:
+                torch.nn.utils.clip_grad_norm_(student.parameters(), args.clip)
             opt.step()
             step += 1
             ema = loss.item() if ema is None else 0.98 * ema + 0.02 * loss.item()
             if step % 50 == 0:
-                with torch.no_grad():
+                with torch.no_grad():  # with --bn frozen this is the inference-mode cosine
                     cos = F.cosine_similarity(pred.flatten(1), target.flatten(1)).mean().item()
                 print(f"step {step} t={time.time() - t0:.0f}s lr={lr:.2e} loss={ema:.5f} cos={cos:.5f}", flush=True)
             if step % 1000 == 0:
