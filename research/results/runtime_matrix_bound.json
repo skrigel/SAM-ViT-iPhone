@@ -1,0 +1,633 @@
+{
+ "idle_power_w": {
+  "cpu_power": 1.0643075277777778,
+  "gpu_power": 0.33378244444444444,
+  "ane_power": 0.0,
+  "ram_power": 0.4193443611111111,
+  "all_power": 2.736166638888889
+ },
+ "bnd_enc_stock/coreai/gpu": {
+  "first_ms": 26.550375,
+  "iters": 1829,
+  "latency_ms": {
+   "mean": 4.375959936577365,
+   "min": 4.152583,
+   "p10": 4.2925,
+   "p50": 4.339958,
+   "p90": 4.459125
+  },
+  "load_attempts": 1,
+  "load_ms": 130.416542,
+  "model": "EViTSAM_Encoder_l0_fp16.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.003911833,
+  "power_w": {
+   "cpu_power": 1.401254808219178,
+   "gpu_power": 34.53962602739726,
+   "ane_power": 0.0015342739726027397,
+   "ram_power": 1.9672985205479454,
+   "all_power": 45.80581220547945
+  },
+  "power_delta_w": {
+   "cpu_power": 0.3369472804414002,
+   "gpu_power": 34.20584358295282,
+   "ane_power": 0.0015342739726027397,
+   "ram_power": 1.5479541594368342,
+   "all_power": 43.06964556659056
+  },
+  "energy_mj": {
+   "cpu_power": 1.4745195872182026,
+   "gpu_power": 149.6886583987661,
+   "ane_power": 0.006714157246790042,
+   "ram_power": 6.774023298883568,
+   "all_power": 188.47766309106075
+  }
+ },
+ "bnd_enc_dense_mb/coreai/gpu": {
+  "first_ms": 25.683,
+  "iters": 1941,
+  "latency_ms": {
+   "mean": 4.122018293663067,
+   "min": 3.936541,
+   "p10": 4.059583,
+   "p50": 4.108958,
+   "p90": 4.175958
+  },
+  "load_attempts": 1,
+  "load_ms": 122.926125,
+  "model": "enc_dense_mb.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.00110025,
+  "power_w": {
+   "cpu_power": 1.3942484109589042,
+   "gpu_power": 35.45566706849315,
+   "ane_power": 0.0,
+   "ram_power": 1.8769672054794522,
+   "all_power": 46.7165145479452
+  },
+  "power_delta_w": {
+   "cpu_power": 0.32994088318112635,
+   "gpu_power": 35.121884624048704,
+   "ane_power": 0.0,
+   "ram_power": 1.457622844368341,
+   "all_power": 43.98034790905631
+  },
+  "energy_mj": {
+   "cpu_power": 1.3600670184985735,
+   "gpu_power": 144.77780517565546,
+   "ane_power": 0.0,
+   "ram_power": 6.00854533976365,
+   "all_power": 181.29375200939594
+  }
+ },
+ "bnd_enc_dense_all/coreai/gpu": {
+  "first_ms": 19.44875,
+  "iters": 2066,
+  "latency_ms": {
+   "mean": 3.8721137386253726,
+   "min": 3.718417,
+   "p10": 3.810375,
+   "p50": 3.854333,
+   "p90": 3.898
+  },
+  "load_attempts": 1,
+  "load_ms": 115.385833,
+  "model": "enc_dense_all.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.000053041,
+  "power_w": {
+   "cpu_power": 1.6305923972602738,
+   "gpu_power": 35.790189383561646,
+   "ane_power": 0.0,
+   "ram_power": 2.094831109589041,
+   "all_power": 47.106096342465754
+  },
+  "power_delta_w": {
+   "cpu_power": 0.566284869482496,
+   "gpu_power": 35.4564069391172,
+   "ane_power": 0.0,
+   "ram_power": 1.6754867484779299,
+   "all_power": 44.369929703576865
+  },
+  "energy_mj": {
+   "cpu_power": 2.192792348584574,
+   "gpu_power": 137.29580646477157,
+   "ane_power": 0.0,
+   "ram_power": 6.487891024838365,
+   "all_power": 171.81112829334765
+  }
+ },
+ "bnd_blk_s3_stock/coreai/gpu": {
+  "first_ms": 10.399916,
+  "iters": 26008,
+  "latency_ms": {
+   "mean": 0.30755427210857816,
+   "min": 0.236584,
+   "p10": 0.292916,
+   "p50": 0.30325,
+   "p90": 0.309583
+  },
+  "load_attempts": 1,
+  "load_ms": 65.998208,
+  "model": "blk_s3_stock.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.000299875,
+  "power_w": {
+   "cpu_power": 5.716713452054795,
+   "gpu_power": 10.963576849315068,
+   "ane_power": 0.0037963561643835613,
+   "ram_power": 0.3390485616438356,
+   "all_power": 20.263666767123286
+  },
+  "power_delta_w": {
+   "cpu_power": 4.6524059242770175,
+   "gpu_power": 10.629794404870623,
+   "ane_power": 0.0037963561643835613,
+   "ram_power": -0.0802957994672755,
+   "all_power": 17.527500128234397
+  },
+  "energy_mj": {
+   "cpu_power": 1.4311228289158213,
+   "gpu_power": 3.269822471876428,
+   "ane_power": 0.001167794053651695,
+   "ram_power": -0.024699726024341326,
+   "all_power": 5.391620158604127
+  }
+ },
+ "bnd_blk_s3_dense/coreai/gpu": {
+  "first_ms": 10.0895,
+  "iters": 29801,
+  "latency_ms": {
+   "mean": 0.26840178842992013,
+   "min": 0.18775,
+   "p10": 0.254959,
+   "p50": 0.266,
+   "p90": 0.271709
+  },
+  "load_attempts": 1,
+  "load_ms": 70.949208,
+  "model": "blk_s3_dense.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.00020575,
+  "power_w": {
+   "cpu_power": 5.743740643835617,
+   "gpu_power": 9.262191315068492,
+   "ane_power": 3.575342465753425e-06,
+   "ram_power": 0.33070932876712333,
+   "all_power": 18.19211789041096
+  },
+  "power_delta_w": {
+   "cpu_power": 4.679433116057838,
+   "gpu_power": 8.928408870624047,
+   "ane_power": 3.575342465753425e-06,
+   "ram_power": -0.08863503234398779,
+   "all_power": 15.45595125152207
+  },
+  "energy_mj": {
+   "cpu_power": 1.2562138089938706,
+   "gpu_power": 2.3968695005240597,
+   "ane_power": 9.59815957610138e-07,
+   "ram_power": -0.02379445305224009,
+   "all_power": 4.149216136174845
+  }
+ },
+ "bnd_blk_s4_stock/coreai/gpu": {
+  "first_ms": 10.616083,
+  "iters": 9997,
+  "latency_ms": {
+   "mean": 0.8002216108832637,
+   "min": 0.516834,
+   "p10": 0.591541,
+   "p50": 0.6505,
+   "p90": 1.211625
+  },
+  "load_attempts": 1,
+  "load_ms": 56.720583,
+  "model": "blk_s4_stock.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.000567333,
+  "power_w": {
+   "cpu_power": 4.780595904109589,
+   "gpu_power": 1.9313771369863015,
+   "ane_power": 0.0,
+   "ram_power": 0.32886712328767126,
+   "all_power": 8.942905671232877
+  },
+  "power_delta_w": {
+   "cpu_power": 3.716288376331811,
+   "gpu_power": 1.5975946925418572,
+   "ane_power": 0.0,
+   "ram_power": -0.09047723782343986,
+   "all_power": 6.206739032343988
+  },
+  "energy_mj": {
+   "cpu_power": 2.9741337785023405,
+   "gpu_power": 1.278549955839208,
+   "ane_power": 0.0,
+   "ram_power": -0.07240864592480592,
+   "all_power": 4.967233524720149
+  }
+ },
+ "bnd_blk_s4_dense/coreai/gpu": {
+  "first_ms": 10.198458,
+  "iters": 7358,
+  "latency_ms": {
+   "mean": 1.087216592552328,
+   "min": 0.750291,
+   "p10": 0.925,
+   "p50": 1.0845,
+   "p90": 1.257
+  },
+  "load_attempts": 1,
+  "load_ms": 55.476584,
+  "model": "blk_s4_dense.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.000381749999999,
+  "power_w": {
+   "cpu_power": 2.090144890410959,
+   "gpu_power": 1.0292139863013698,
+   "ane_power": 0.0,
+   "ram_power": 0.1724096712328767,
+   "all_power": 4.56687694520548
+  },
+  "power_delta_w": {
+   "cpu_power": 1.0258373626331814,
+   "gpu_power": 0.6954315418569255,
+   "ane_power": 0.0,
+   "ram_power": -0.24693468987823441,
+   "all_power": 1.830710306316591
+  },
+  "energy_mj": {
+   "cpu_power": 1.1153969168902738,
+   "gpu_power": 0.7561453949234177,
+   "ane_power": 0.0,
+   "ram_power": -0.2684930397314129,
+   "all_power": 1.9905383696917864
+  }
+ },
+ "bnd_peak_matmul_4096/coreai/gpu": {
+  "first_ms": 139.558334,
+  "iters": 1748,
+  "latency_ms": {
+   "mean": 4.577981745995427,
+   "min": 4.429542,
+   "p10": 4.499459,
+   "p50": 4.560792,
+   "p90": 4.666459
+  },
+  "load_attempts": 1,
+  "load_ms": 1238.3495,
+  "model": "peak_matmul_4096.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.002560375,
+  "power_w": {
+   "cpu_power": 2.4098097945205477,
+   "gpu_power": 46.28251082191781,
+   "ane_power": 0.6145305753424657,
+   "ram_power": 10.913151301369863,
+   "all_power": 79.36657806849315
+  },
+  "power_delta_w": {
+   "cpu_power": 1.3455022667427698,
+   "gpu_power": 45.948728377473365,
+   "ane_power": 0.6145305753424657,
+   "ram_power": 10.493806940258752,
+   "all_power": 76.63041142960427
+  },
+  "energy_mj": {
+   "cpu_power": 6.159875929238198,
+   "gpu_power": 210.35896624439727,
+   "ane_power": 2.8133970431702333,
+   "ram_power": 48.04194714131275,
+   "all_power": 350.8235091684772
+  }
+ },
+ "bnd_peak_stream_64M/coreai/gpu": {
+  "first_ms": 63.462208,
+  "iters": 6604,
+  "latency_ms": {
+   "mean": 1.2113709836462778,
+   "min": 1.119958,
+   "p10": 1.159667,
+   "p50": 1.2125,
+   "p90": 1.261583
+  },
+  "load_attempts": 1,
+  "load_ms": 4525.4145,
+  "model": "peak_stream_64M.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.000778666999999,
+  "power_w": {
+   "cpu_power": 3.697167876712329,
+   "gpu_power": 8.632292465753425,
+   "ane_power": 0.8477946712328767,
+   "ram_power": 6.8235896164383565,
+   "all_power": 31.63197445205479
+  },
+  "power_delta_w": {
+   "cpu_power": 2.632860348934551,
+   "gpu_power": 8.29851002130898,
+   "ane_power": 0.8477946712328767,
+   "ram_power": 6.404245255327245,
+   "all_power": 28.895807813165902
+  },
+  "energy_mj": {
+   "cpu_power": 3.1897233363031083,
+   "gpu_power": 10.053685939790215,
+   "ane_power": 1.0271074378552814,
+   "ram_power": 7.758774805732614,
+   "all_power": 35.00741410013774
+  }
+ },
+ "bnd_partA_s2/coreai/ane": {
+  "first_ms": 3.257958,
+  "iters": 3805,
+  "latency_ms": {
+   "mean": 2.133927645466491,
+   "min": 1.362917,
+   "p10": 1.378,
+   "p50": 1.430083,
+   "p90": 2.940291
+  },
+  "load_attempts": 1,
+  "load_ms": 80.286375,
+  "model": "EViTSAM_EncA_s2.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "ane",
+  "wall_s": 8.120029916,
+  "power_w": {
+   "cpu_power": 1.535469602739726,
+   "gpu_power": 0.00872186301369863,
+   "ane_power": 7.792666863013699,
+   "ram_power": 0.746949397260274,
+   "all_power": 11.70704783561644
+  },
+  "power_delta_w": {
+   "cpu_power": 0.4711620749619483,
+   "gpu_power": -0.3250605814307458,
+   "ane_power": 7.792666863013699,
+   "ram_power": 0.32760503614916286,
+   "all_power": 8.97088119672755
+  },
+  "energy_mj": {
+   "cpu_power": 1.0054796699016175,
+   "gpu_power": -0.6936929423731959,
+   "ane_power": 16.62987859476823,
+   "ram_power": 0.6991229156802796,
+   "all_power": 19.14423750073839
+  }
+ },
+ "bnd_partA_s3/coreai/ane": {
+  "first_ms": 9.399458,
+  "iters": 1425,
+  "latency_ms": {
+   "mean": 5.6189674821052655,
+   "min": 4.439083,
+   "p10": 4.476209,
+   "p50": 4.663916,
+   "p90": 8.511417
+  },
+  "load_attempts": 1,
+  "load_ms": 2091.628958,
+  "model": "EViTSAM_EncA_s3.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "ane",
+  "wall_s": 8.007314417,
+  "power_w": {
+   "cpu_power": 1.652006301369863,
+   "gpu_power": 0.024644150684931507,
+   "ane_power": 5.111768575342466,
+   "ram_power": 0.5534938767123287,
+   "all_power": 9.711912808219179
+  },
+  "power_delta_w": {
+   "cpu_power": 0.5876987735920851,
+   "gpu_power": -0.3091382937595129,
+   "ane_power": 5.111768575342466,
+   "ram_power": 0.13414951560121763,
+   "all_power": 6.975746169330289
+  },
+  "energy_mj": {
+   "cpu_power": 3.3023781492190327,
+   "gpu_power": -1.7371000115560202,
+   "ane_power": 28.723886462952475,
+   "ram_power": 0.753808666882243,
+   "all_power": 39.19788973404277
+  }
+ },
+ "bnd_partB_s2/coreai/gpu": {
+  "first_ms": 21.578291,
+  "iters": 2550,
+  "latency_ms": {
+   "mean": 3.138109853725484,
+   "min": 3.028875,
+   "p10": 3.093458,
+   "p50": 3.113625,
+   "p90": 3.144
+  },
+  "load_attempts": 1,
+  "load_ms": 110.345417,
+  "model": "EViTSAM_EncB_s2.aimodel",
+  "pipelined": false,
+  "runtime": "coreai",
+  "unit": "gpu",
+  "wall_s": 8.002399166,
+  "power_w": {
+   "cpu_power": 2.943729602739726,
+   "gpu_power": 32.05626984931507,
+   "ane_power": 0.5453676301369863,
+   "ram_power": 2.306690780821918,
+   "all_power": 45.75914143835616
+  },
+  "power_delta_w": {
+   "cpu_power": 1.8794220749619481,
+   "gpu_power": 31.722487404870627,
+   "ane_power": 0.5453676301369863,
+   "ram_power": 1.8873464197108067,
+   "all_power": 43.02297479946727
+  },
+  "energy_mj": {
+   "cpu_power": 5.897994370681366,
+   "gpu_power": 99.55137519693419,
+   "ane_power": 1.711470379832006,
+   "ram_power": 5.9228625157046455,
+   "all_power": 135.01451672709644
+  }
+ },
+ "bnd_split_s2/coreai-split/ane,gpu": {
+  "first_ms": 24.467083,
+  "iters": 656,
+  "latency_ms": {
+   "mean": 12.196102949695115,
+   "min": 7.686834,
+   "p10": 9.4125,
+   "p50": 11.612709,
+   "p90": 15.913833
+  },
+  "load_attempts": 1,
+  "load_ms": 128.033958,
+  "model": "EViTSAM_EncB_s2.aimodel",
+  "pipelined": false,
+  "runtime": "coreai-split",
+  "unit": "ane,gpu",
+  "wall_s": 8.000935083,
+  "power_w": {
+   "cpu_power": 1.4683646164383561,
+   "gpu_power": 2.9256657808219177,
+   "ane_power": 0.7925702876712328,
+   "ram_power": 0.8686653287671232,
+   "all_power": 8.266134246575342
+  },
+  "power_delta_w": {
+   "cpu_power": 0.4040570886605783,
+   "gpu_power": 2.591883336377473,
+   "ane_power": 0.7925702876712328,
+   "ram_power": 0.4493209676560121,
+   "all_power": 5.529967607686453
+  },
+  "energy_mj": {
+   "cpu_power": 4.928101427133022,
+   "gpu_power": 31.612027922356116,
+   "ane_power": 9.6666210676405,
+   "ram_power": 5.480164472022096,
+   "all_power": 67.44651195151238
+  }
+ },
+ "bnd_split_s2/coreai-split-pipe/ane,gpu": {
+  "first_ms": 23.829208,
+  "iters": 2389,
+  "latency_ms": {
+   "mean": 3.3498345408120627,
+   "min": 3.074083,
+   "p10": 3.1355,
+   "p50": 3.167125,
+   "p90": 3.921709
+  },
+  "load_attempts": 1,
+  "load_ms": 127.975375,
+  "model": "EViTSAM_EncB_s2.aimodel",
+  "pipelined": true,
+  "runtime": "coreai-split",
+  "unit": "ane,gpu",
+  "wall_s": 8.002984625,
+  "power_w": {
+   "cpu_power": 2.8670110136986304,
+   "gpu_power": 30.50479523287671,
+   "ane_power": 3.224464246575342,
+   "ram_power": 2.53237798630137,
+   "all_power": 47.87712601369863
+  },
+  "power_delta_w": {
+   "cpu_power": 1.8027034859208526,
+   "gpu_power": 30.171012788432265,
+   "ane_power": 3.224464246575342,
+   "ram_power": 2.113033625190259,
+   "all_power": 45.14095937480974
+  },
+  "energy_mj": {
+   "cpu_power": 6.038931888345956,
+   "gpu_power": 101.07080429740552,
+   "ane_power": 10.801732017247664,
+   "ram_power": 7.078516372752471,
+   "all_power": 151.21908908930598
+  }
+ },
+ "bnd_split_s3/coreai-split/ane,gpu": {
+  "first_ms": 29.019334,
+  "iters": 689,
+  "latency_ms": {
+   "mean": 11.619254396226424,
+   "min": 7.116125,
+   "p10": 7.536541,
+   "p50": 7.730375,
+   "p90": 22.47225
+  },
+  "load_attempts": 1,
+  "load_ms": 261.031292,
+  "model": "EViTSAM_EncB_s3.aimodel",
+  "pipelined": false,
+  "runtime": "coreai-split",
+  "unit": "ane,gpu",
+  "wall_s": 8.005846041,
+  "power_w": {
+   "cpu_power": 2.118685534246575,
+   "gpu_power": 4.9972693561643835,
+   "ane_power": 2.4189435479452053,
+   "ram_power": 0.8139915342465753,
+   "all_power": 12.310310205479452
+  },
+  "power_delta_w": {
+   "cpu_power": 1.0543780064687973,
+   "gpu_power": 4.663486911719939,
+   "ane_power": 2.4189435479452053,
+   "ram_power": 0.3946471731354642,
+   "all_power": 9.574143566590562
+  },
+  "energy_mj": {
+   "cpu_power": 12.251361377076476,
+   "gpu_power": 54.187457517341635,
+   "ane_power": 28.10695156272803,
+   "ram_power": 4.585608865948328,
+   "all_power": 111.2469076466686
+  }
+ },
+ "bnd_split_s3/coreai-split-pipe/ane,gpu": {
+  "first_ms": 30.609208,
+  "iters": 1570,
+  "latency_ms": {
+   "mean": 5.099253012738845,
+   "min": 4.498041,
+   "p10": 4.531791,
+   "p50": 4.622167,
+   "p90": 6.439958
+  },
+  "load_attempts": 1,
+  "load_ms": 129.291958,
+  "model": "EViTSAM_EncB_s3.aimodel",
+  "pipelined": true,
+  "runtime": "coreai-split",
+  "unit": "ane,gpu",
+  "wall_s": 8.005953458,
+  "power_w": {
+   "cpu_power": 4.052984041095891,
+   "gpu_power": 15.542166424657534,
+   "ane_power": 6.07583297260274,
+   "ram_power": 1.5640167260273972,
+   "all_power": 32.988166287671234
+  },
+  "power_delta_w": {
+   "cpu_power": 2.988676513318113,
+   "gpu_power": 15.208383980213089,
+   "ane_power": 6.07583297260274,
+   "ram_power": 1.144672364916286,
+   "all_power": 30.251999648782345
+  },
+  "energy_mj": {
+   "cpu_power": 15.24025800423091,
+   "gpu_power": 77.55262058406292,
+   "ane_power": 30.98269808741358,
+   "ram_power": 5.837066037056419,
+   "all_power": 154.26503261119987
+  }
+ }
+}

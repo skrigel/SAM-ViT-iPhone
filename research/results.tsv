@@ -47,3 +47,9 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	ebc3d1a	timing_split_s2_stock_seq	coreai-split	ane,gpu	bench						11.64	discard	ANE stages0-2 -> GPU, sequential: 11.64 ms, 62 mJ; idle gaps between units (avg dP 5 W)
 2026-11-26	ebc3d1a	timing_split_s2_stock_pipe	coreai-split	ane,gpu	bench						3.17	keep	same split pipelined across frames: 3.17 ms/frame (vs GPU-only 4.29), 154 vs 206 mJ/frame; latency per frame still >= A+B
 2026-11-26	ebc3d1a	timing_split_s2_fused_pipe	coreai-split	ane,gpu	bench						6.84	discard	split + fused MBConv v1, pipelined: 6.84 ms/frame, 218 mJ
+2026-11-26	7c95adf	bound_enc_dense_mb	coreai	gpu	bench						4.11	keep	fusion bound, MBConv: 8 fusable blocks as bare matmuls: 4.11 vs stock 4.34 ms -> perfect MBConv fusion saves <=0.23 ms (5.3%)
+2026-11-26	7c95adf	bound_enc_dense_all	coreai	gpu	bench						3.85	keep	fusion bound, everything: all activations+depthwise deleted, BN folded: 3.85 ms -> any fusion saves <=0.49 ms (11%)
+2026-11-26	7c95adf	peak_matmul_4096	coreai	gpu	bench						4.56	keep	stock compiler best case 30.1 TFLOPS fp16; encoder averages 16.0 TFLOPS (53%)
+2026-11-26	7c95adf	peak_stream_64M	coreai	gpu	bench						1.21	keep	device memory bandwidth 222 GB/s (256 MB moved)
+2026-11-26	7c95adf	split_s3_ef	coreai-split	ane,gpu	dev	150	83.24	83.27	-0.03	0.9993		keep	stages 0-3 on ANE (ExpForm in stage 3) -> GPU: accurate, cos 0.9993
+2026-11-26	7c95adf	timing_split_s3_pipe	coreai-split	ane,gpu	bench						4.62	discard	stage 3 on ANE overshoots: part A 4.66 ms ANE vs B 3.11 ms GPU at k=2; pipelined 4.62 vs k=2 3.17 ms/frame

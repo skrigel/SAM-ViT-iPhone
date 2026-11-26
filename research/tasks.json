@@ -96,15 +96,15 @@
    "id": "metal-kernels",
    "priority": 3,
    "title": "Custom Metal kernels via coreai-torch TorchMetalKernel (e.g. fused LiteMLA) vs MPSGraph",
-   "status": "in_progress",
-   "notes": "milestone 1 done: fused MBConv v1 accurate but 2x slower (7.90 vs 4.29 ms) - redundant depthwise per output tile. v2 next."
+   "status": "done",
+   "notes": "v1 2x slower; bound: perfect MBConv fusion <=5.3%, any fusion <=11% on M5 Pro (encoder at 53% of 30 TFLOPS matmul peak). Not worth it on Mac; re-measure bound on iPhone."
   },
   {
    "id": "gpu-ane-split",
    "priority": 2,
    "title": "Manual GPU+ANE split pipeline (stages 0-2 ANE, rest GPU), sequential and pipelined",
    "status": "done",
-   "notes": "pipelined ANE(stages 0-2)||GPU: 3.17 ms/frame, 154 mJ vs GPU-only 4.29 ms, 206 mJ; sequential 11.6 ms"
+   "notes": "pipelined ANE(stages 0-2)||GPU: 3.17 ms/frame, 154 mJ vs GPU-only 4.29 ms, 206 mJ; sequential 11.6 ms; k=3 (stage 3 on ANE) overshoots: 4.62 ms/frame. k=2 best."
   }
  ]
 }

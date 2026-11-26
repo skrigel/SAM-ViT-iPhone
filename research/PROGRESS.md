@@ -148,7 +148,46 @@ Findings:
   between hand-offs (average power 5 W), likely clocking down. For live camera segmentation pipelining is the right mode.
 - The Core AI ExpForm ANE model failed to load 5/5 in the Swift bench this time (`nilError`), the same flakiness seen before.
 
-Next for fusion (v2): put all output channels of a block in one threadgroup (or two passes: dw+GELU into threadgroup
+### Is hand fusion worth it? Upper bounds (M5 Pro, `kernels/bound_models.py`, `results/runtime_matrix_bound.json`)
+Fusion can only remove memory round trips and dispatches of the cheap ops; it cannot remove the dense matmuls. So the
+stock-compiled encoder was timed with the cheap ops deleted. That is generous to fusion (a real kernel still has to
+do the depthwise and GELU work), so these are upper bounds on the saving:
+
+| Core AI fp16, GPU | p50 ms | max saving from fusion |
+|---|---|---|
+| stock encoder | 4.34 | |
+| 8 fusable MBConv blocks reduced to their two matmuls | 4.11 | **0.23 ms (5.3%)**: ceiling for MBConv fusion |
+| every activation and depthwise conv deleted, every BN folded | 3.85 | **0.49 ms (11%)**: ceiling for fusing anything |
+| *fused MBConv v1 (milestone 1)* | *7.90* | *−3.6 ms* |
+
+Hardware ceilings: the stock compiler reaches **30.1 TFLOPS** on a 4096³ fp16 matmul and the device streams
+**222 GB/s**. The encoder (69 GFLOP) averages 16.0 TFLOPS, i.e. 53% of the matmul peak; its large layers are compute-bound,
+which is why removing memory traffic buys so little. The remaining headroom is in matmul efficiency on the encoder's
+small shapes (compiler codegen), not in fusion.
+
+Single-block timings are not reliable at this size: the s4 block (0.65 ms stock, 1.08 ms with the cheap ops removed)
+runs at 1–2 W GPU power, i.e. the GPU barely clocks up for a 0.1 ms workload. Use the encoder-level numbers.
+
+**Verdict for the M5 Pro:** hand-fusing kernels is not worth it here. Even a perfect MBConv fusion saves ≤5%, and fusing everything saves
+≤11%, less than the 27% the pipelined ANE + GPU split already gives. Untested: the iPhone A19 Pro, where bandwidth per FLOP
+is lower and the bound should be re-measured with the same models before closing the question.
+
+**Measurement pitfall:** with the display asleep and no user activity, macOS keeps the GPU at low clocks: the
+stock encoder took 7.22 ms at 8.6 W GPU power instead of 4.34 ms at 34 W. `caffeinate -i` alone does not prevent it;
+`caffeinate -u` (declare the user active) does. `work/bound_timing.sh` holds it during the run. Earlier GPU timings
+in this file were taken with the user active (37 W GPU) and match.
+
+### Rebalancing the ANE + GPU split
+| split | part A (ANE) | part B (GPU) | sequential | pipelined / frame | mJ / frame | dev mIoU |
+|---|---|---|---|---|---|---|
+| k=2 (stages 0–2 on ANE) | 1.43 ms | 3.11 ms | 11.6 ms | **3.17 ms** | 151 | 83.07 (fused B) |
+| k=3 (stages 0–3 on ANE, ExpForm) | 4.66 ms | — | 7.7 ms | 4.62 ms | 154 | 83.24 (−0.03) |
+
+At k=2 the GPU half is the bottleneck (3.11 vs 1.43 ms); stage 3 on the ANE costs 3.2 ms, so k=3 overshoots and the ANE
+becomes the bottleneck. k=2 stays best. A finer split (one or two stage-3 blocks on the ANE) could balance the halves
+better for ≤~7%. Sequential runs stay slow at either split (both units idle between hand-offs).
+
+Next for fusion (v2), now deprioritised by the bound above: put all output channels of a block in one threadgroup (or two passes: dw+GELU into threadgroup
 tiles shared across output tiles), stage E tiles with halos in threadgroup memory, vectorised stores; then LiteMLA
 (the ReLU-linear attention: q/k/v matmuls + kᵀv reduction + normalisation in one kernel) and the neck resize + add.
 
