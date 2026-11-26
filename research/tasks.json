@@ -97,14 +97,14 @@
    "priority": 3,
    "title": "Custom Metal kernels via coreai-torch TorchMetalKernel (e.g. fused LiteMLA) vs MPSGraph",
    "status": "in_progress",
-   "notes": "milestone 1: fused MBConv (K1 expand+GELU, K2 dw+GELU+project+BN+residual) in Core AI; accuracy done, timing queued"
+   "notes": "milestone 1 done: fused MBConv v1 accurate but 2x slower (7.90 vs 4.29 ms) - redundant depthwise per output tile. v2 next."
   },
   {
    "id": "gpu-ane-split",
    "priority": 2,
    "title": "Manual GPU+ANE split pipeline (stages 0-2 ANE, rest GPU), sequential and pipelined",
-   "status": "in_progress",
-   "notes": "tools/split_encoder.py; accuracy 83.07 dev"
+   "status": "done",
+   "notes": "pipelined ANE(stages 0-2)||GPU: 3.17 ms/frame, 154 mJ vs GPU-only 4.29 ms, 206 mJ; sequential 11.6 ms"
   }
  ]
 }

@@ -114,6 +114,44 @@ on the M5 Pro GPU. Lessons so far:
   Verdict: ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
   regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 
+### Fused kernels vs the GPU + ANE split (milestone 1)
+`kernels/fused_mbconv.py`: the 8 stride-1 MBConv blocks in stages 3–4 as two Core AI inline Metal kernels using
+MetalPerformancePrimitives `matmul2d` (K1 expand + bias + GELU; K2 depthwise 3×3 + GELU built in threadgroup memory and fed
+straight into the project matmul, BN folded, residual in the epilogue). `tools/split_encoder.py`: stages 0–2 on the ANE,
+the rest on the GPU, run sequentially or pipelined across frames (`RuntimeBench` `-pipe`).
+
+Accuracy: fused blocks have ~30% less error than Core AI's fp16 blocks (fp32 accumulation); full encoder 83.45 (−0.11),
+cos 0.99956; split + fused 83.07 on dev (fp32 83.27).
+
+Timing, M5 Pro, 8 s per case after distillation finished (`results/runtime_matrix_fused.json`, energy from macmon):
+
+| encoder | unit | p50 ms | mJ / frame |
+|---|---|---|---|
+| Core AI fp16 stock | GPU | **4.29** | 206 |
+| Core AI fp16 + fused MBConv v1 | GPU | 7.90 | 289 |
+| Core ML fp16 stock | GPU / all | 4.93 / 4.86 | 180 / 185 |
+| MPSGraph (from the .mlpackage) | GPU | 4.45 | 188 |
+| Split s2 stock, sequential | ANE → GPU | 11.64 | 62 |
+| **Split s2 stock, pipelined** | ANE ‖ GPU | **3.17 / frame** | **154** |
+| Split s2 + fused, sequential / pipelined | | 20.53 / 6.84 | 99 / 218 |
+| single block s3 (256→1024→256 @32²): stock / fused | GPU | 0.29 / 0.57 | |
+| single block s4 (512→3072→512 @16²): stock / fused | GPU | 0.67 / 1.38 | |
+| Core AI ExpForm s34 (earlier run) | ANE | 10.9 | 90 |
+
+Findings:
+- **Fused MBConv v1 is ~2× slower than Core AI's own kernels** per block and +3.6 ms on the encoder. Cause: K2 tiles the
+  output by 64 channels and every tile recomputes the full depthwise + GELU over all expanded channels, so the
+  depthwise work and E reads are repeated cout/64 times (4× in stage 3, 8× in stage 4), with 9 uncached device reads per
+  output and scalar stores. Saving the memory round trips does not pay for that.
+- **The GPU + ANE split only wins when pipelined across frames:** 3.17 ms/frame (26% more throughput than the GPU alone)
+  and 25% less energy per frame. Per-frame latency is still A + B. Run sequentially it is 11.6 ms: both units sit idle
+  between hand-offs (average power 5 W), likely clocking down. For live camera segmentation pipelining is the right mode.
+- The Core AI ExpForm ANE model failed to load 5/5 in the Swift bench this time (`nilError`), the same flakiness seen before.
+
+Next for fusion (v2): put all output channels of a block in one threadgroup (or two passes: dw+GELU into threadgroup
+tiles shared across output tiles), stage E tiles with halos in threadgroup memory, vectorised stores; then LiteMLA
+(the ReLU-linear attention: q/k/v matmuls + kᵀv reduction + normalisation in one kernel) and the neck resize + add.
+
 ### Next
 1. Run `RuntimeBench` and the ANE model on the iPhone 17 Pro (latency, energy, thermal); decide GPU vs ANE.
 2. ReLU student: optional fp16-aware fine-tune (train through `.half()` simulation) to close the 1.5-point ANE gap.

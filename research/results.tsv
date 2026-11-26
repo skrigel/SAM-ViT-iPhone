@@ -41,3 +41,9 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	79a33a3	relu_distill_awake_120m	torch	gpu	dev	150	82.28	83.27	-0.99	0.9737		keep	ReLU student, 120 min awake (13.4k steps, BN recal+frozen, lr 3e-5): torch fp32 dev
 2026-11-26	79a33a3	relu_distill_awake_120m	torch	gpu	eval	500	82.55	83.56	-1.00	0.9733		keep	ReLU student 120 min awake, torch fp32 full eval: -1.00, cos 0.973
 2026-11-26	79a33a3	relu_distill_awake_120m_ane	coreml	ane	eval	500	81.02	83.56	-2.54	0.9531	8.34	discard	ReLU student, Core ML fp16 ANE: -2.54 (cos 0.953) at 8.34 ms p50; ExpForm is -0.10 at 13.2 ms
+2026-11-26	ebc3d1a	timing_fusedmb_full	coreai	gpu	bench						7.90	discard	fused MBConv v1 full encoder: 7.90 ms vs stock Core AI GPU 4.29 (1.84x slower), 289 vs 206 mJ
+2026-11-26	ebc3d1a	timing_blk_s3_fused	coreai	gpu	bench						0.57	discard	stage-3 block (256->1024->256 @32x32): fused 0.57 vs stock 0.29 ms
+2026-11-26	ebc3d1a	timing_blk_s4_fused	coreai	gpu	bench						1.38	discard	stage-4 block (512->3072->512 @16x16): fused 1.38 vs stock 0.67 ms; K2 recomputes depthwise per 64-ch output tile (8x redundant)
+2026-11-26	ebc3d1a	timing_split_s2_stock_seq	coreai-split	ane,gpu	bench						11.64	discard	ANE stages0-2 -> GPU, sequential: 11.64 ms, 62 mJ; idle gaps between units (avg dP 5 W)
+2026-11-26	ebc3d1a	timing_split_s2_stock_pipe	coreai-split	ane,gpu	bench						3.17	keep	same split pipelined across frames: 3.17 ms/frame (vs GPU-only 4.29), 154 vs 206 mJ/frame; latency per frame still >= A+B
+2026-11-26	ebc3d1a	timing_split_s2_fused_pipe	coreai-split	ane,gpu	bench						6.84	discard	split + fused MBConv v1, pipelined: 6.84 ms/frame, 218 mJ
