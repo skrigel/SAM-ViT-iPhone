@@ -1,0 +1,14 @@
+# Core AI conversion + runtime env. coreai-torch 0.4.4 is validated up to torch 2.13.
+coreai-torch==0.4.4
+torch==2.13.0
+torchvision==0.28.0
+timm
+einops
+omegaconf
+onnx
+onnxsim
+huggingface-hub
+pillow
+opencv-python-headless
+pycocotools
+segment-anything @ git+https://github.com/facebookresearch/segment-anything.git

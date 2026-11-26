@@ -1,0 +1,42 @@
+{
+ "taps": [
+  "encoder.backbone.stages.0.op_list.0",
+  "encoder.backbone.stages.0.op_list.1",
+  "encoder.backbone.stages.1.op_list.0",
+  "encoder.backbone.stages.1.op_list.1",
+  "encoder.backbone.stages.2.op_list.0",
+  "encoder.backbone.stages.2.op_list.1",
+  "encoder.backbone.stages.3.op_list.0",
+  "encoder.backbone.stages.3.op_list.1",
+  "encoder.backbone.stages.3.op_list.2",
+  "encoder.backbone.stages.3.op_list.3",
+  "encoder.backbone.stages.3.op_list.4",
+  "encoder.backbone.stages.4.op_list.0",
+  "encoder.backbone.stages.4.op_list.1",
+  "encoder.backbone.stages.4.op_list.2",
+  "encoder.backbone.stages.4.op_list.3",
+  "encoder.backbone.stages.4.op_list.4",
+  "encoder.neck.input_ops.0",
+  "output"
+ ],
+ "ane": [
+  0.9999997044064357,
+  0.9999968995385521,
+  0.999998561064436,
+  0.9999941834984207,
+  0.9999919197152349,
+  0.9999875260964216,
+  0.9996403326219876,
+  0.9982872782859402,
+  0.9967341818124055,
+  0.9962665421272922,
+  0.9960693649283607,
+  0.997018822908922,
+  0.993888279284498,
+  0.989438472998049,
+  0.988846316390973,
+  0.9924313556963349,
+  0.9949996391419875,
+  0.9986461143083405
+ ]
+}

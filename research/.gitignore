@@ -1,0 +1,8 @@
+work/
+__pycache__/
+*.mlpackage
+*.mlmodelc
+*.aimodel
+*.pt
+.venv/
+.venv-coreai/
