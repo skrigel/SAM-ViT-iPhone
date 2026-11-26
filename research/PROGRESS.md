@@ -96,8 +96,10 @@ on the M5 Pro GPU. Lessons so far:
 - Frozen BN with the teacher's running stats: the swap changes every BN input distribution, so inference cosine sat at
   ~0.53 and training went NaN at lr 1e-4. Crashed.
 - **Recipe that trains:** re-estimate BN running stats on 200 batches after the swap, then freeze BN, lr 3e-5, grad clip 1.0.
-  Inference-mode cosine 0.56 → 0.90 in 400 steps (~3.5 min). A 120-minute run is going (`work/students/relu_recal_120m.pt`,
-  checkpoint every 1000 steps). Evaluate with `eval_coco.py --backend torch --student work/students/relu_recal_120m.pt`.
+  Inference-mode cosine 0.56 → 0.90 in 400 steps (~3.5 min).
+- That 120-minute run only got through **790 steps**: the Mac went into idle sleep at 01:37 and the wall-clock budget
+  ran out while it slept. Result on the dev split: **78.43 mIoU (−4.83 vs fp32), embedding cosine 0.932**, still climbing.
+  It needs a rerun with the machine kept awake (`caffeinate -i`): ~13k steps fit in 2 h.
 - The exact rewrites already give cosine 0.998 with no training, so this route only pays off if it reaches that and
   then runs at stock ANE latency (~8 ms vs 11–13 ms).
 
