@@ -17,15 +17,20 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from convert import EncoderWrapper  # noqa: E402
-from evitsam import INPUT_SIZE, ROOT, ClenshawGELU, load_sam, make_coreml_friendly, replace_gelu  # noqa: E402
+from evitsam import INPUT_SIZE, ROOT, ClenshawGELU, ExpFormGELU, TanhFormGELU, load_sam, make_coreml_friendly, replace_gelu  # noqa: E402
 
 
-def build(model, anefix, student=None):
+def build(model, anefix, student=None, gelu="native", where=""):
     enc = torch.load(student, weights_only=False) if student else EncoderWrapper(load_sam(model))
     # Resize-as-matmul + fp16-safe attention (exact rewrites; the stock bicubic interpolate does not export in fp16).
     enc = make_coreml_friendly(enc)
+    import re
     if anefix:
-        replace_gelu(enc, lambda g: ClenshawGELU(g.approximate))
+        gelu = "clenshaw"
+    if gelu != "native":
+        make = {"clenshaw": lambda g: ClenshawGELU(g.approximate), "tanhform": lambda g: TanhFormGELU(),
+                "expform": lambda g: ExpFormGELU()}[gelu]
+        print("replaced", len(replace_gelu(enc, make, where=lambda n: re.search(where, n) is not None)), "GELUs")
     return enc.eval()
 
 
@@ -35,13 +40,15 @@ def main():
     ap.add_argument("--precision", default="fp16", choices=["fp16", "fp32"])
     ap.add_argument("--anefix", action="store_true", help="ANE-accurate GELU + linear resize (evitsam.py)")
     ap.add_argument("--student")
+    ap.add_argument("--gelu", default="native", choices=["native", "clenshaw", "tanhform", "expform"])
+    ap.add_argument("--gelu-where", default="")
     ap.add_argument("--name")
     args = ap.parse_args()
 
     from coreai_torch import TorchConverter, get_decomp_table
 
     size = INPUT_SIZE[args.model]
-    enc = build(args.model, args.anefix, args.student)
+    enc = build(args.model, args.anefix, args.student, args.gelu, args.gelu_where)
     x = torch.rand(1, 3, size, size) * 255
     with torch.no_grad():
         enc(x)  # warm SeparableResize caches so export sees constants
@@ -58,7 +65,7 @@ def main():
 
     ep = torch.export.export(Named(enc).eval(), (x,)).run_decompositions(get_decomp_table())
     prog = TorchConverter().add_exported_program(ep).to_coreai()
-    name = args.name or f"{args.model}_{args.precision}" + ("_anefix" if args.anefix else "")
+    name = args.name or f"{args.model}_{args.precision}" + ("_anefix" if args.anefix else "") + ("" if args.gelu == "native" else f"_{args.gelu}")
     out = pathlib.Path(ROOT) / "models" / f"EViTSAM_Encoder_{name}.aimodel"
     shutil.rmtree(out, ignore_errors=True)
     prog.save_asset(out)

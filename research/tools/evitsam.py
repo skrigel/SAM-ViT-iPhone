@@ -190,3 +190,28 @@ class TanhFormGELU(nn.Module):
     def forward(self, x):
         h = 0.5 * x
         return h + h * torch.tanh(self.C * x + (self.C * 0.044715) * (x * x * x))
+
+
+class TanhFormGELU2(nn.Module):
+    """TanhFormGELU with the polynomial factored as x * (c + c k x^2): one multiply fewer."""
+
+    C = 0.7978845608028654
+
+    def forward(self, x):
+        h = 0.5 * x
+        return h + h * torch.tanh(x * (self.C + (self.C * 0.044715) * (x * x)))
+
+
+class ExpFormGELU(nn.Module):
+    """gelu_tanh(x) = relu(x) - t / (1 + exp(2 u(t))),  t = |x|,  u(t) = c (t + k t^3)   (exact identity).
+
+    Uses the Neural Engine's exp and divide, which are accurate (unlike its gelu/tanh/sigmoid): on the ANE this is
+    as accurate as the GPU's GELU (rms error 2.9e-4 over |x| < 4, 5.6e-5 near 0) in ~10 elementwise ops.
+    t is clamped at 4.5 so exp stays finite in fp16 (the dropped term is < 1e-6).
+    """
+
+    C2 = 2 * 0.7978845608028654
+
+    def forward(self, x):
+        t = torch.clamp(torch.abs(x), max=4.5)
+        return torch.relu(x) - t / (1.0 + torch.exp(t * (self.C2 + (self.C2 * 0.044715) * (t * t))))

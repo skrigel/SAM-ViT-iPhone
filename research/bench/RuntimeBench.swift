@@ -137,10 +137,23 @@ struct Main {
         let warm = a.count > 5 ? Int(a[5])! : 10
 
         let t0 = now()
+        var loadAttempts = 1
         let r: Runner
         switch runtime {
         case "coreml": r = try CoreMLRunner(path: path, unit: unit)
-        case "coreai": r = try await CoreAIRunner(path: path, unit: unit)
+        case "coreai":
+            // Core AI's ANE specialization fails intermittently on macOS 27.2 (Foundation nilError); retry and report it.
+            var attempt = 0
+            while true {
+                attempt += 1
+                do { r = try await CoreAIRunner(path: path, unit: unit); break } catch {
+                    let ns = error as NSError
+                    FileHandle.standardError.write("Core AI load attempt \(attempt) failed: domain=\(ns.domain) code=\(ns.code)\n".data(using: .utf8)!)
+                    if attempt >= 5 { throw error }
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                }
+            }
+            loadAttempts = attempt
         default: r = try MPSGraphRunner(path: path)
         }
         let loadMs = ms(now() - t0)
@@ -148,14 +161,19 @@ struct Main {
         try await r.run()
         let firstMs = ms(now() - t1)
         for _ in 0..<warm { try await r.run() }
+        // DURATION=<s>: loop for that long instead of `iters` runs (for power sampling over a steady window).
+        let duration = Double(ProcessInfo.processInfo.environment["DURATION"] ?? "0") ?? 0
         var xs: [Double] = []
-        for _ in 0..<iters {
+        let start = now()
+        while duration > 0 ? ms(now() - start) < duration * 1000 : xs.count < iters {
             let t = now()
             try await r.run()
             xs.append(ms(now() - t))
         }
+        let wallS = ms(now() - start) / 1000
         let out: [String: Any] = ["runtime": runtime, "unit": unit, "model": (path as NSString).lastPathComponent,
-                                  "load_ms": loadMs, "first_ms": firstMs, "iters": iters, "latency_ms": stats(xs)]
+                                  "load_ms": loadMs, "load_attempts": loadAttempts, "first_ms": firstMs, "iters": xs.count, "wall_s": wallS,
+                                  "latency_ms": stats(xs)]
         let json = try JSONSerialization.data(withJSONObject: out, options: [.sortedKeys])
         print(String(data: json, encoding: .utf8)!)
     }

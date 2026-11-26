@@ -1,15 +1,103 @@
 {
-  "note": "Change only `status` (todo | in_progress | done | blocked) and `notes`. Add new tasks at the end.",
-  "tasks": [
-    {"id": "harness", "priority": 1, "title": "Research harness: PROGRAM.md, frozen evaluator, results.tsv, init.sh", "status": "done", "notes": ""},
-    {"id": "eval-baseline", "priority": 1, "title": "Baseline mIoU on the 500-image COCO eval for Core ML fp32/fp16 on GPU and fp16 on ANE", "status": "done", "notes": "fp32 83.56; fp16 GPU 83.46; fp16 ANE 50.16"},
-    {"id": "ane-diagnose", "priority": 1, "title": "Find why fp16 collapses on the ANE (single-op probes + per-block taps)", "status": "done", "notes": "Two causes: ANE built-in GELU error (6e-3) amplified by high-gain BN in stages 3-4; ANE miscompile of the neck's matmul-based bicubic resize."},
-    {"id": "ane-exact-fix", "priority": 1, "title": "Training-free fp16 ANE fix (exact rewrites), <= 0.5 mIoU loss", "status": "done", "notes": "Clenshaw GELU + linear resize: 83.37 (-0.19). Costs latency."},
-    {"id": "ane-fix-latency", "priority": 1, "title": "Bring the ANE-fixed encoder's latency back toward stock fp16 (partial swap, cheaper GELU forms)", "status": "in_progress", "notes": ""},
-    {"id": "relu-distill", "priority": 2, "title": "Proposal 4.1: ReLU student distilled from the GELU teacher (L2 on embeddings), fixed wall-clock budget", "status": "todo", "notes": ""},
-    {"id": "coreai-convert", "priority": 2, "title": "Convert the encoder to Core AI (.aimodel) with coreai-torch; check accuracy per compute unit", "status": "in_progress", "notes": "fp32/fp16/anefix converted"},
-    {"id": "runtime-bench", "priority": 2, "title": "Latency: Core ML vs Core AI vs MPSGraph (Metal) on GPU/ANE, same encoder", "status": "in_progress", "notes": "bench/RuntimeBench.swift"},
-    {"id": "iphone-bench", "priority": 3, "title": "Run RuntimeBench on the iPhone 17 Pro (needs a device; Mac M5 Pro numbers are proxies)", "status": "blocked", "notes": "no device attached to this Mac"},
-    {"id": "app-integrate", "priority": 3, "title": "Ship the ANE-fixed encoder in the app and switch encoder units to .cpuAndNeuralEngine", "status": "todo", "notes": "Same I/O contract as SAMImageEncoder"}
-  ]
+ "note": "Change only `status` (todo | in_progress | done | blocked) and `notes`. Add new tasks at the end.",
+ "tasks": [
+  {
+   "id": "harness",
+   "priority": 1,
+   "title": "Research harness: PROGRAM.md, frozen evaluator, results.tsv, init.sh",
+   "status": "done",
+   "notes": ""
+  },
+  {
+   "id": "eval-baseline",
+   "priority": 1,
+   "title": "Baseline mIoU on the 500-image COCO eval for Core ML fp32/fp16 on GPU and fp16 on ANE",
+   "status": "done",
+   "notes": "fp32 83.56; fp16 GPU 83.46; fp16 ANE 50.16"
+  },
+  {
+   "id": "ane-diagnose",
+   "priority": 1,
+   "title": "Find why fp16 collapses on the ANE (single-op probes + per-block taps)",
+   "status": "done",
+   "notes": "Two causes: ANE built-in GELU error (6e-3) amplified by high-gain BN in stages 3-4; ANE miscompile of the neck's matmul-based bicubic resize."
+  },
+  {
+   "id": "ane-exact-fix",
+   "priority": 1,
+   "title": "Training-free fp16 ANE fix (exact rewrites), <= 0.5 mIoU loss",
+   "status": "done",
+   "notes": "Clenshaw GELU + linear resize: 83.37 (-0.19). Costs latency."
+  },
+  {
+   "id": "ane-fix-latency",
+   "priority": 1,
+   "title": "Bring the ANE-fixed encoder's latency back toward stock fp16 (partial swap, cheaper GELU forms)",
+   "status": "done",
+   "notes": "ExpForm GELU in stages 3-4: 83.46 (-0.10) at 13.2 ms Core ML / 10.9 ms Core AI on ANE (stock 8.0 ms, broken)"
+  },
+  {
+   "id": "relu-distill",
+   "priority": 2,
+   "title": "Proposal 4.1: ReLU student distilled from the GELU teacher (L2 on embeddings), fixed wall-clock budget",
+   "status": "in_progress",
+   "notes": "150-min run: cos 0.969 at step 3000; work/students/relu_150m.pt"
+  },
+  {
+   "id": "coreai-convert",
+   "priority": 2,
+   "title": "Convert the encoder to Core AI (.aimodel) with coreai-torch; check accuracy per compute unit",
+   "status": "done",
+   "notes": "Core AI fp16 GPU 83.67; ANE stock 58.4; ANE + ExpForm 83.69"
+  },
+  {
+   "id": "runtime-bench",
+   "priority": 2,
+   "title": "Latency: Core ML vs Core AI vs MPSGraph (Metal) on GPU/ANE, same encoder",
+   "status": "done",
+   "notes": "GPU: tie (~4.3 ms, all MPSGraph). ANE: Core AI faster (10.9 vs 13.2 ms ANE-safe). results/runtime_matrix.json"
+  },
+  {
+   "id": "iphone-bench",
+   "priority": 3,
+   "title": "Run RuntimeBench on the iPhone 17 Pro (needs a device; Mac M5 Pro numbers are proxies)",
+   "status": "blocked",
+   "notes": "no device attached to this Mac"
+  },
+  {
+   "id": "app-integrate",
+   "priority": 3,
+   "title": "Ship the ANE-fixed encoder in the app and switch encoder units to .cpuAndNeuralEngine",
+   "status": "done",
+   "notes": "SAMImageEncoderANE.mlpackage + Segmenter.aneEncoderURL; default placement unchanged (team decision)"
+  },
+  {
+   "id": "decoder-fixed-shape",
+   "priority": 2,
+   "title": "Fixed-shape decoder export so the decoder can leave the CPU (app decoder: 220/220 ops on CPU)",
+   "status": "todo",
+   "notes": ""
+  },
+  {
+   "id": "coreai-ane-flaky",
+   "priority": 3,
+   "title": "Investigate Core AI Swift ANE load nilError (intermittent; Clenshaw model 5/5)",
+   "status": "todo",
+   "notes": ""
+  },
+  {
+   "id": "l2-xl0-anefix",
+   "priority": 3,
+   "title": "Apply ExpForm + linear resize to L2/XL0 and evaluate on ANE",
+   "status": "todo",
+   "notes": ""
+  },
+  {
+   "id": "metal-kernels",
+   "priority": 3,
+   "title": "Custom Metal kernels via coreai-torch TorchMetalKernel (e.g. fused LiteMLA) vs MPSGraph",
+   "status": "todo",
+   "notes": ""
+  }
+ ]
 }

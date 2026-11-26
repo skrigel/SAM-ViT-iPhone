@@ -136,6 +136,7 @@ def main():
                 torch.save(copy.deepcopy(student).cpu().eval(), os.path.join(out, f"{args.tag}.pt"))
     torch.save(copy.deepcopy(student).cpu().eval(), os.path.join(out, f"{args.tag}.pt"))
     print(f"done: {step} steps in {time.time() - t0:.0f}s, final loss {ema:.5f}", flush=True)
+    os._exit(0)  # persistent DataLoader workers otherwise keep the process alive
 
 
 if __name__ == "__main__":

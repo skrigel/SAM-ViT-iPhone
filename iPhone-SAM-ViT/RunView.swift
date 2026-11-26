@@ -169,6 +169,8 @@ final class RunModel {
         do {
             let segmenter = Segmenter()
             try await segmenter.load()   // pass encoderURL: to try a variant from Documents
+            // Encoder on the Neural Engine (accurate in fp16 only with the ANE-safe model):
+            // try await segmenter.load(encoderUnits: .cpuAndNeuralEngine, encoderURL: Segmenter.aneEncoderURL)
             modelName = segmenter.encoderName
 
             let worker = FrameWorker(segmenter: segmenter)

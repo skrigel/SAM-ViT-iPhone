@@ -8,11 +8,12 @@ import argparse
 import os
 import sys
 
+import numpy as np
 import torch
 import torch.nn as nn
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from evitsam import INPUT_SIZE, ROOT, ClenshawGELU, TanhFormGELU, load_sam, make_coreml_friendly, replace_gelu  # noqa: E402
+from evitsam import INPUT_SIZE, ROOT, ClenshawGELU, ExpFormGELU, TanhFormGELU, TanhFormGELU2, load_sam, make_coreml_friendly, replace_gelu  # noqa: E402
 
 MEAN = [123.675, 116.28, 103.53]
 STD = [58.395, 57.12, 57.375]
@@ -68,7 +69,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="l0", choices=list(INPUT_SIZE))
     ap.add_argument("--precision", default="fp16", choices=["fp16", "fp32"])
-    ap.add_argument("--gelu", default="native", choices=["native", "clenshaw", "tanhform"],
+    ap.add_argument("--gelu", default="native", choices=["native", "clenshaw", "tanhform", "tanhform2", "expform"],
                     help="clenshaw: ANE-accurate GELU built from relu/add/mul (evitsam.ClenshawGELU)")
     ap.add_argument("--gelu-where", default="", help="regex on module names to limit the GELU swap (default: all)")
     ap.add_argument("--gelu-degree", type=int, default=8)
@@ -76,6 +77,7 @@ def main():
     ap.add_argument("--name", help="output name suffix (default: <model>_<precision>[_<gelu>])")
     ap.add_argument("--encoder-only", action="store_true")
     ap.add_argument("--tensor-input", action="store_true", help="float (1,3,S,S) pixel tensor input instead of an image")
+    ap.add_argument("--fp16-output", action="store_true", help="fp16 embedding output, like the app's SAMImageEncoder")
     args = ap.parse_args()
 
     os.makedirs(os.path.join(ROOT, "models"), exist_ok=True)
@@ -88,7 +90,9 @@ def main():
     enc = make_coreml_friendly(enc).eval()
     if args.gelu != "native":
         import re
-        make = (lambda g: ClenshawGELU(g.approximate, args.gelu_degree)) if args.gelu == "clenshaw" else (lambda g: TanhFormGELU())
+        make = {"clenshaw": lambda g: ClenshawGELU(g.approximate, args.gelu_degree),
+                "tanhform": lambda g: TanhFormGELU(), "tanhform2": lambda g: TanhFormGELU2(),
+                "expform": lambda g: ExpFormGELU()}[args.gelu]
         done = replace_gelu(enc, make,
                             where=lambda n: re.search(args.gelu_where, n) is not None)
         print(f"replaced {len(done)} GELUs")
@@ -100,7 +104,8 @@ def main():
         traced,
         inputs=[ct.TensorType(name="image", shape=(1, 3, size, size)) if args.tensor_input
                 else ct.ImageType(name="image", shape=(1, 3, size, size), color_layout=ct.colorlayout.RGB)],
-        outputs=[ct.TensorType(name="image_embeddings")],
+        outputs=[ct.TensorType(name="image_embeddings", dtype=np.float16) if args.fp16_output
+                 else ct.TensorType(name="image_embeddings")],
         compute_precision=prec,
         minimum_deployment_target=ct.target.iOS18,
     )

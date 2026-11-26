@@ -1,0 +1,32 @@
+date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p50	status	note
+2026-11-26	df11dc4	coreml_fp32_gpu	coreml	gpu	eval	500	83.56	83.56	-0.00	1.0000	4.27	keep	fp32 reference on GPU (Core ML)
+2026-11-26	df11dc4	coreml_fp16_gpu	coreml	gpu	eval	500	83.46	83.56	-0.10	0.9996		keep	stock fp16 on GPU: lossless
+2026-11-26	df11dc4	coreml_fp16_ane	coreml	ane	eval	500	50.16	83.56	-33.40	0.2169	8.01	keep	baseline: stock fp16 on ANE collapses
+2026-11-26	df11dc4	dev_clenshaw_all_ane	coreml	ane	dev	100	22.05	83.91	-61.86	0.2204	36.20	discard	Clenshaw GELU alone (matmul resize): neck still broken
+2026-11-26	df11dc4	coreml_fp16_linresize_ane	coreml	ane	eval	500	57.66	83.56	-25.90	0.2647		discard	linear resize alone: GELU error still amplified in stage 3
+2026-11-26	df11dc4	coreml_fp16_anefix_ane	coreml	ane	eval	500	83.37	83.56	-0.19	0.9985	36.17	keep	Clenshaw GELU (all 30) + linear resize: fixed, but 4.5x slower
+2026-11-26	df11dc4	coreml_fp16_anefix_gpu	coreml	gpu	eval	500	83.43	83.56	-0.13	0.9995	16.08	keep	same model on GPU: unchanged accuracy
+2026-11-26	df11dc4	dev_l0_fp16_cl_s34neck_ane	coreml	ane	dev	150	83.16	83.27	-0.11	0.9984	26.93	keep	Clenshaw only in stages 3,4 + neck
+2026-11-26	df11dc4	dev_l0_fp16_cl_s34_ane	coreml	ane	dev	150	83.16	83.27	-0.10	0.9982	25.19	keep	Clenshaw only in stages 3,4
+2026-11-26	df11dc4	dev_l0_fp16_cl_s4neck_ane	coreml	ane	dev	150	58.02	83.27	-25.25	0.2633	17.06	discard	stage 3 GELUs are required
+2026-11-26	df11dc4	dev_l0_fp16_cl_deg6_ane	coreml	ane	dev	150	84.02	83.27	+0.75	0.9606	29.83	keep	degree-6 Clenshaw, all GELUs (dev noise: above ref)
+2026-11-26	df11dc4	dev_l0_fp16_cl_s34neck_deg6_ane	coreml	ane	dev	150	84.03	83.27	+0.76	0.9628	22.55	keep	degree-6 Clenshaw, stages 3,4 + neck
+2026-11-26	df11dc4	dev_l0_fp16_tf_all_ane	coreml	ane	dev	150	83.16	83.27	-0.11	0.9904	15.78	keep	TanhForm GELU (explicit tanh, ~8 ops), all 30
+2026-11-26	df11dc4	dev_l0_fp16_tf_s34_ane	coreml	ane	dev	150	83.22	83.27	-0.05	0.9899	12.67	keep	TanhForm GELU only in stages 3,4: best so far
+2026-11-26	df11dc4	dev_l0_fp16_tf_s34neck_ane	coreml	ane	dev	150	83.19	83.27	-0.08	0.9900	13.11	discard	adding neck GELUs: no gain, +0.4 ms
+2026-11-26	df11dc4	coreai_fp32_gpu	coreai	gpu	eval	500	83.56	83.56	+0.00	1.0000		keep	Core AI fp32 on GPU: exact
+2026-11-26	df11dc4	coreai_fp16_gpu	coreai	gpu	eval	500	83.67	83.56	+0.11	0.9994	4.33	keep	Core AI stock fp16 on GPU
+2026-11-26	df11dc4	coreai_fp16_ane	coreai	ane	eval	500	58.36	83.56	-25.20	0.2682	7.22	discard	Core AI stock fp16 on ANE: same GELU failure as Core ML
+2026-11-26	df11dc4	coreai_fp16_anefix_ane	coreai	ane	eval	500	83.63	83.56	+0.07	0.9984		keep	Core AI + Clenshaw fix on ANE (Swift load flaky: nilError)
+2026-11-26	df11dc4	coreai_fp16_anefix_gpu	coreai	gpu	eval	500	83.66	83.56	+0.10	0.9992	15.32	keep	Core AI + Clenshaw fix on GPU
+2026-11-26	df11dc4	dev_l0_fp16_tf2_s34_ane	coreml	ane	dev	150	83.19	83.27	-0.08	0.9924	11.70	keep	TanhForm2 (factored) stages 3,4
+2026-11-26	df11dc4	dev_l0_fp16_tf_s3_ane	coreml	ane	dev	150	83.72	83.27	+0.45	0.9792	10.69	discard	TanhForm stage 3 only: cos 0.979
+2026-11-26	df11dc4	coreml_fp16_tf2_s34_ane	coreml	ane	eval	500	83.01	83.56	-0.55	0.9924	11.70	discard	full eval: -0.55, 15 images lose >10 pts (tanh error at |x|>1)
+2026-11-26	df11dc4	coreml_fp16_tf2_s3_ane	coreml	ane	eval	500	83.19	83.56	-0.36	0.9820	10.15	discard	full eval: -0.36 +- 0.27, cos 0.982
+2026-11-26	df11dc4	coreai_fp16_tf_s34_ane	coreai	ane	eval	500	83.35	83.56	-0.21	0.9916	11.41	keep	Core AI TanhForm s34 on ANE
+2026-11-26	df11dc4	coreai_fp16_tf_s34_gpu	coreai	gpu	eval	500	83.68	83.56	+0.13	0.9994	4.32	keep	Core AI TanhForm s34 on GPU: no GPU cost
+2026-11-26	df11dc4	coreml_fp16_ef_s34_ane	coreml	ane	eval	500	83.46	83.56	-0.10	0.9985	13.20	keep	WINNER: ExpForm GELU (exp+div, exact) stages 3,4 + linear resize
+2026-11-26	df11dc4	coreml_fp16_ef_all_ane	coreml	ane	eval	500	83.44	83.56	-0.12	0.9987	17.06	discard	ExpForm all 30: no gain, slower
+2026-11-26	df11dc4	app_SAMImageEncoderANE_ane	coreml	ane	eval	500	83.46	83.56	-0.10	0.9985	13.20	keep	shipped in app as SAMImageEncoderANE (= ef_s34, image in, fp16 out)
+2026-11-26	df11dc4	app_SAMImageEncoder_stock_ane	coreml	ane	eval	500	4.46	83.56	-79.10	0.0928		keep	app's existing bundled encoder on ANE: broken
+2026-11-26	df11dc4	coreai_fp16_ef_s34_ane	coreai	ane	eval	500	83.69	83.56	+0.13	0.9984	10.92	keep	Core AI + ExpForm s34 on ANE: best ANE latency/energy

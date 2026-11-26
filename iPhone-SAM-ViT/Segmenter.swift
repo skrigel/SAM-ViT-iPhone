@@ -41,6 +41,16 @@ final class Segmenter: @unchecked Sendable {
 
     // MARK: - Loading
 
+    /// The Neural Engine-safe encoder (Models/SAMImageEncoderANE.mlpackage, built by research/tools/convert.py).
+    /// Same interface as SAMImageEncoder. The stock fp16 encoder is wrong on the ANE (50 vs 84 mIoU on COCO): the ANE's
+    /// built-in GELU is too coarse for the high-gain layers in stage 3, and the ANE miscompiles the neck's resize.
+    /// This one computes GELU from exp/divide (exact identity) in stages 3-4 and the resize as linear ops:
+    /// 83.46 mIoU on the ANE vs 83.56 fp32 (stock model on the ANE: 4.5). See research/PROGRESS.md.
+    /// Use it with `encoderUnits: .cpuAndNeuralEngine`.
+    static var aneEncoderURL: URL? {
+        Bundle.main.url(forResource: "SAMImageEncoderANE", withExtension: "mlmodelc")
+    }
+
     /// Each model gets its own compute units so placement is an explicit experiment knob.
     /// `encoderURL`: optional variant (e.g. ReLU or int8 encoder imported into Documents)
     /// with the same interface; `nil` uses the bundled SAMImageEncoder.

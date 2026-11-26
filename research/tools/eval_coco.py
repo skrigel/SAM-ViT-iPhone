@@ -119,9 +119,10 @@ class CoreAIEncoder:
         model = self.loop.run_until_complete(rt.AIModel.load(path, opts))
         self.f = model.load_function(model.function_names[0])
         self.name = self.f.desc.input_names[0]
+        self.dtype = np.float16 if "float16" in str(self.f.desc.input_descriptor(self.name)).lower() else np.float32
 
     def __call__(self, x):
-        out = self.loop.run_until_complete(self.f({self.name: self.rt.NDArray(np.ascontiguousarray(x))}))
+        out = self.loop.run_until_complete(self.f({self.name: self.rt.NDArray(np.ascontiguousarray(x, self.dtype))}))
         return np.asarray(list(out.values())[0].numpy(), np.float32)
 
 
