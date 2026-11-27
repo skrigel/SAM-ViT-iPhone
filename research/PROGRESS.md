@@ -111,12 +111,27 @@ on the M5 Pro GPU. Lessons so far:
 
   The student is fast on the ANE (stock latency, no GELU at all), but it loses 1 mIoU to distillation and another
   1.5 to ANE fp16 rounding (not yet localised; the high-gain stage-3 BNs that amplified GELU error are the first suspect).
-- **Where the ANE gap comes from (dev split, 150 images):** torch fp16 on MPS 82.35, Core AI fp16 GPU 82.29, fp32 82.28,
-  but Core AI ANE 81.94 with a worst-image embedding cosine of 0.35. So it is not generic fp16 rounding (fp16-aware
-  training would not help); a few images collapse on the ANE specifically. The next step would be tapping stage outputs
-  on those images (`tools/taps.py`) as was done for GELU. Core AI ANE: 7.16 ms, 76 mJ per frame.
-  (The torch-fp16 run's mean cosine to the teacher is oddly low, 0.83, despite an unchanged mIoU; unexplained, MPS-specific.)
-  Verdict: ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
+- **Where the ANE gap came from, and the fix.** On the GPU the student loses nothing in fp16 (torch fp16 82.35, Core AI GPU
+  82.29, fp32 82.28 on dev); on the ANE two of 150 dev images collapsed (embedding cos 0.35 and 0.45) and carried the
+  whole dev loss. Block taps (`tools/taps.py --rows 17,78,0`) were exact through stage 3 and broke at the first stage-4
+  LiteMLA (cos 0.65 / 0.93, amplified to 0.1 by the end of stage 4). Inside it (`tools/probe_litemla.py`) every
+  intermediate (qkv, normalised q/k, V·Kᵀ, num, den) matched fp32 at cos 1.0000 and only `att = num / den` failed
+  (cos 0.62 on image 78). Cause: for tokens whose q hits mostly-empty K channels, num and den are both tiny; den was already
+  padded ×1024 against subnormal flushing, but num (kept small by the 1/n in K) fell below 6e-5 and the ANE flushed it.
+  **Fix (exact): scale K by 64 and the den pad by 1/64** (`FP16_KSCALE` in `evitsam.py`): attention error on image 78
+  130% → 0.07%, num peaks at ~190. Full eval, 500 images:
+
+  | model on ANE | before | with K-scale fix | latency |
+  |---|---|---|---|
+  | ReLU student, Core ML | 81.02 (−2.54) | **82.55 (= fp32 student 82.55)** | 7.90 ms |
+  | ReLU student, Core AI | — | **82.55** | **7.13 ms** |
+  | ExpForm s34, Core ML | 83.46, cos 0.9985 | 83.43, cos **0.9992** | 13.24 ms |
+  | ExpForm s34, Core AI | 83.69, cos 0.9984 | 83.65, cos **0.9992** | 10.89 ms |
+
+  The ReLU student is now exactly as accurate on the ANE as in fp32; its remaining −1.0 is distillation, which more
+  training could shrink. The ExpForm models keep their mIoU (within the ±0.09 noise) and their embedding error halves,
+  so the shipped `SAMImageEncoderANE` should be regenerated with the fix.
+  Verdict (before the fix): ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
   regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 
 ### Fused kernels vs the GPU + ANE split (milestone 1)

@@ -88,6 +88,11 @@ def fp16_safe_relu_linear_att(self, qkv: torch.Tensor) -> torch.Tensor:
     in pure fp16, V K^T overflows (1.3e6 in L2) and the denominator goes subnormal (5e-5 in L0), which the
     Neural Engine flushes to zero. Its eps of 1e-15 also rounds to 0, so eps here is fp16-representable.
 
+    K is scaled by FP16_KSCALE (and the denominator pad by 1/FP16_KSCALE, so den is unchanged) because for tokens whose
+    q hits mostly-empty K channels both num and den are tiny, and num then falls into fp16 subnormals, which the Neural
+    Engine flushes: on 2 of 150 dev images the ReLU student's first stage-4 attention lost its output (cos 0.62).
+    With 64, num stays normal there and peaks at ~190 for L0 (tools/probe_litemla.py).
+
     Layout matters on the Neural Engine: the reference's strided q/k/v slices of a 4-D reshape followed by
     F.pad miscompile there (NaN output), so q/k/v come from a 5-D reshape and the denominator is computed
     separately instead of as a padded row of V.
@@ -98,15 +103,17 @@ def fp16_safe_relu_linear_att(self, qkv: torch.Tensor) -> torch.Tensor:
     q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]
     q = self.kernel_func(q)
     k = self.kernel_func(k)
-    k = k / (torch.amax(k, dim=(2, 3), keepdim=True) + 1e-4) * (1.0 / n)
+    k = k / (torch.amax(k, dim=(2, 3), keepdim=True) + 1e-4) * (FP16_KSCALE / n)
     q = q / (torch.amax(q, dim=2, keepdim=True) + 1e-4)
     num = torch.matmul(torch.matmul(v, k.transpose(-1, -2)), q)
-    den = torch.matmul(torch.sum(k, dim=3, keepdim=True).transpose(-1, -2), q) * FP16_PAD
-    out = num / (den + 1e-4) * FP16_PAD
+    pad = FP16_PAD / FP16_KSCALE  # den ends up scaled by FP16_PAD overall, as before
+    den = torch.matmul(torch.sum(k, dim=3, keepdim=True).transpose(-1, -2), q) * pad
+    out = num / (den + 1e-4) * pad
     return torch.reshape(out, (B, -1, H, W))
 
 
 FP16_PAD = 1024.0
+FP16_KSCALE = 64.0
 
 
 def make_coreml_friendly(module):

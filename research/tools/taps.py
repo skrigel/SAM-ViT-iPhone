@@ -64,6 +64,7 @@ def main():
     ap.add_argument("--fine", default="", help="comma-separated stages to tap inside blocks")
     ap.add_argument("--units", default="cpu,gpu,ane")
     ap.add_argument("--images", type=int, default=4)
+    ap.add_argument("--rows", default="", help="comma-separated dev-split indices to tap instead of the first --images")
     ap.add_argument("--tag", default=None)
     ap.add_argument("--extra", default="", help="comma-separated extra module names to tap")
     args = ap.parse_args()
@@ -93,7 +94,9 @@ def main():
         ml.save(path)
 
     xs = []
-    for row in split("dev")[: args.images]:
+    dev = split("dev")
+    rows = [dev[int(r)] for r in args.rows.split(",")] if args.rows else dev[: args.images]
+    for row in rows:
         img = Image.open(os.path.join(COCO, "val2017", row["file"])).convert("RGB")
         xs.append(letterbox(img, size).transpose(2, 0, 1)[None].astype(np.float32))
     with torch.no_grad():
@@ -103,19 +106,27 @@ def main():
     table = {"taps": labels}
     for u in args.units.split(","):
         m = ct.models.MLModel(path, compute_units=UNITS[u])
+        # Outputs by position: a tap whose tensor is also the next tap's (e.g. a block without a residual returns its
+        # point_conv output) comes out under a renamed duplicate ("t9_type_fp32" twice), so names are not t0..tN.
+        onames = [o.name for o in m.get_spec().description.output]
         cos = np.zeros((len(xs), len(labels)))
         for j, x in enumerate(xs):
             out = m.predict({"x": x})
             for i in range(len(labels)):
-                a, b = out[f"t{i}"].astype(np.float64).ravel(), refs[j][i].astype(np.float64).ravel()
+                a, b = out[onames[i]].astype(np.float64).ravel(), refs[j][i].astype(np.float64).ravel()
                 cos[j, i] = a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12)
         table[u] = cos.mean(0).tolist()
+        table[u + "_per_image"] = cos.tolist()
     os.makedirs(os.path.join(RESULTS, "taps"), exist_ok=True)
     json.dump(table, open(os.path.join(RESULTS, "taps", f"{tag}.json"), "w"), indent=1)
     units = args.units.split(",")
     print(f"{'tap':60s}" + "".join(f"{u:>9s}" for u in units))
+    per = len(xs) > 1 and args.rows
     for i, n in enumerate(labels):
-        print(f"{n.replace('encoder.backbone.', ''):60s}" + "".join(f"{table[u][i]:9.4f}" for u in units))
+        cells = "".join(f"{table[u][i]:9.4f}" for u in units)
+        if per:
+            cells += "   " + " ".join(f"{u}[{j}]={table[u + '_per_image'][j][i]:.4f}" for u in units for j in range(len(xs)))
+        print(f"{n.replace('encoder.backbone.', ''):60s}" + cells)
 
 
 if __name__ == "__main__":
