@@ -130,7 +130,8 @@ on the M5 Pro GPU. Lessons so far:
 
   The ReLU student is now exactly as accurate on the ANE as in fp32; its remaining −1.0 is distillation, which more
   training could shrink. The ExpForm models keep their mIoU (within the ±0.09 noise) and their embedding error halves,
-  so the shipped `SAMImageEncoderANE` should be regenerated with the fix.
+  so the shipped `SAMImageEncoderANE` was regenerated with the fix (same I/O; full eval on the ANE 83.43, cos 0.9992,
+  13.18 ms).
   Verdict (before the fix): ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
   regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 

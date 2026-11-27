@@ -67,3 +67,4 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	26ca72b	relu_k64_coreai_ane	coreai	ane	eval	500	82.55	83.56	-1.01	0.9733	7.13	keep	K-scale fix, Core AI ANE: 82.55 = fp32 at 7.13 ms
 2026-11-26	26ca72b	ef_s34_k64_coreml_ane	coreml	ane	eval	500	83.43	83.56	-0.13	0.9992	13.24	keep	ExpForm s34 + K-scale fix, Core ML ANE: mIoU same (83.46->83.43, within +-0.09), embedding cos 0.9985->0.9992
 2026-11-26	26ca72b	ef_s34_k64_coreai_ane	coreai	ane	eval	500	83.65	83.56	+0.09	0.9992	10.89	keep	ExpForm s34 + K-scale fix, Core AI ANE: 83.65 (was 83.69), cos 0.9984->0.9992
+2026-11-26	e61c187	app_SAMImageEncoderANE_k64	coreml	ane	eval	500	83.43	83.56	-0.13	0.9992	13.18	keep	app SAMImageEncoderANE regenerated with LiteMLA K-scale fix (image in, fp16 out): 83.43, cos 0.9985->0.9992
