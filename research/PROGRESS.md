@@ -111,6 +111,11 @@ on the M5 Pro GPU. Lessons so far:
 
   The student is fast on the ANE (stock latency, no GELU at all), but it loses 1 mIoU to distillation and another
   1.5 to ANE fp16 rounding (not yet localised; the high-gain stage-3 BNs that amplified GELU error are the first suspect).
+- **Where the ANE gap comes from (dev split, 150 images):** torch fp16 on MPS 82.35, Core AI fp16 GPU 82.29, fp32 82.28,
+  but Core AI ANE 81.94 with a worst-image embedding cosine of 0.35. So it is not generic fp16 rounding (fp16-aware
+  training would not help); a few images collapse on the ANE specifically. The next step would be tapping stage outputs
+  on those images (`tools/taps.py`) as was done for GELU. Core AI ANE: 7.16 ms, 76 mJ per frame.
+  (The torch-fp16 run's mean cosine to the teacher is oddly low, 0.83, despite an unchanged mIoU; unexplained, MPS-specific.)
   Verdict: ExpForm stays the default. ReLU would need longer training plus fp16-aware fine-tuning (or BN gain
   regularisation) to be competitive; that is a 5–37% latency win (8.3 vs 13.2 Core ML / 10.9 Core AI) for −2.4 mIoU now.
 
@@ -186,6 +191,23 @@ in this file were taken with the user active (37 W GPU) and match.
 At k=2 the GPU half is the bottleneck (3.11 vs 1.43 ms); stage 3 on the ANE costs 3.2 ms, so k=3 overshoots and the ANE
 becomes the bottleneck. k=2 stays best. A finer split (one or two stage-3 blocks on the ANE) could balance the halves
 better for ≤~7%. Sequential runs stay slow at either split (both units idle between hand-offs).
+
+Finer split points (`split_encoder.py --k 2 --j N --expform-a`: the first N ops of stage 3 also on the ANE), all accurate
+on dev (83.28 / 83.26 / 83.25 vs fp32 83.27, cos 0.9993), same quiet-machine session (`results/runtime_matrix_split.json`):
+
+| ANE part | part A on ANE | pipelined ms / frame | mJ / frame |
+|---|---|---|---|
+| stages 0–2 (k=2) | 1.41 | **3.18** | 149 |
+| + stage-3 downsample (j=1) | 3.10 | 3.16 | 161 |
+| + 2 ops (j=2) | 3.45 | 3.52 | 139 |
+| + 3 ops (j=3) | 3.86 | 3.97 | 120 |
+| *GPU only (Core AI)* | | *4.34* | *198* |
+| *ANE only (Core AI ExpForm s34, earlier run)* | | *10.9* | *90* |
+
+The stride-2 stage-3 downsample alone costs 1.7 ms on the ANE (its expand runs at 64×64 with the ExpForm GELU), which
+already balances the halves, so no finer split beats k=2 on throughput. Moving more of stage 3 onto the ANE instead
+trades throughput for energy, which makes j a dial: 3.18 ms / 149 mJ → 3.97 ms / 120 mJ per frame. With the GPU-only and
+ANE-only points this is a throughput-vs-energy Pareto curve for the app to choose from (e.g. j=3 or ANE-only on battery).
 
 Next for fusion (v2), now deprioritised by the bound above: put all output channels of a block in one threadgroup (or two passes: dw+GELU into threadgroup
 tiles shared across output tiles), stage E tiles with halos in threadgroup memory, vectorised stores; then LiteMLA

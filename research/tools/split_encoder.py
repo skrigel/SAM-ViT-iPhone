@@ -7,7 +7,8 @@ Neither Core ML nor Core AI splits this encoder across units by itself (each run
 so this is the "GPU + ANE" baseline the fused kernels are compared against. Stages 0-2 are accurate on the ANE with
 the stock GELU (taps: cos >= 0.9997); stage 3 needs the ExpForm GELU there (see PROGRESS.md).
 
-  USE_OS_COREAI=1 .venv-coreai/bin/python tools/split_encoder.py --k 2 [--fuse-mbconv] [--name s2]
+  USE_OS_COREAI=1 .venv-coreai/bin/python tools/split_encoder.py --k 2 [--j 2 --expform-a] [--fuse-mbconv] [--name s2]
+  --j N also puts the first N ops of stage k+1 on the ANE (finer balance); A then returns that partial feature last.
   -> work/models/EViTSAM_EncA_<name>.aimodel, EViTSAM_EncB_<name>.aimodel
 """
 
@@ -30,11 +31,13 @@ NECK_KEYS = ["stage2", "stage3", "stage4"]  # SamNeck.input_keys for L0 (checked
 
 
 class PartA(nn.Module):
-    def __init__(self, enc, k, keys):
+    def __init__(self, enc, k, keys, j=0):
         super().__init__()
         self.register_buffer("mean", enc.mean.clone())
         self.register_buffer("std", enc.std.clone())
-        self.stages = nn.ModuleList(enc.encoder.backbone.stages[: k + 1])
+        bb = enc.encoder.backbone
+        self.stages = nn.ModuleList(bb.stages[: k + 1])
+        self.extra = nn.ModuleList(bb.stages[k + 1].op_list[:j]) if j else None  # named "extra" (stage k+1 ops)
         self.keep = [int(key[5:]) for key in keys if int(key[5:]) <= k]
 
     def forward(self, image):
@@ -44,25 +47,37 @@ class PartA(nn.Module):
             x = st(x)
             if i in self.keep:
                 outs.append(x)
+        if self.extra is not None:
+            for op in self.extra:
+                x = op(x)
+            outs.append(x)
         return tuple(outs) if len(outs) > 1 else outs[0]
 
 
 class PartB(nn.Module):
-    def __init__(self, enc, k, keys):
+    def __init__(self, enc, k, keys, j=0):
         super().__init__()
-        self.k = k
-        self.stages = nn.ModuleList(enc.encoder.backbone.stages[k + 1:])
+        self.k, self.j = k, j
+        bb = enc.encoder.backbone
+        self.rest = nn.ModuleList(bb.stages[k + 1].op_list[j:]) if j else None  # remaining ops of stage k+1
+        self.stages = nn.ModuleList(bb.stages[k + 2:] if j else bb.stages[k + 1:])
         self.neck, self.norm = enc.encoder.neck, enc.encoder.norm
         self.keys = keys
         self.given = [key for key in keys if int(key[5:]) <= k]
 
     def forward(self, *feats):
         d = dict(zip(self.given, feats))
-        x = feats[-1] if self.k == max(int(g[5:]) for g in self.given) else None
-        assert x is not None, "the last given feature must be stage k"
+        x = feats[-1] if (self.j or self.k == max(int(g[5:]) for g in self.given)) else None
+        assert x is not None, "the last given feature must be stage k (or the partial stage k+1 when j > 0)"
+        first = self.k + 1
+        if self.rest is not None:
+            for op in self.rest:
+                x = op(x)
+            d[f"stage{first}"] = x
+            first += 1
         for i, st in enumerate(self.stages):
             x = st(x)
-            d[f"stage{self.k + 1 + i}"] = x
+            d[f"stage{first + i}"] = x
         return self.norm(self.neck(d)["sam_encoder"])
 
 
@@ -80,7 +95,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--k", type=int, default=2, help="last stage on the ANE")
     ap.add_argument("--fuse-mbconv", action="store_true", help="fused Metal MBConv kernels in part B")
-    ap.add_argument("--expform-a", action="store_true", help="ExpForm GELU in part A's stage 3 (needed if k >= 3)")
+    ap.add_argument("--j", type=int, default=0, help="also run the first J ops of stage k+1 on the ANE")
+    ap.add_argument("--expform-a", action="store_true", help="ExpForm GELU in part A's stage-3 ops (needed if they run on the ANE)")
     ap.add_argument("--name", required=True)
     args = ap.parse_args()
 
@@ -91,9 +107,11 @@ def main():
     x = torch.rand(1, 3, 512, 512) * 255
     with torch.no_grad():
         enc(x)  # warm SeparableResize caches
-    a, b = PartA(enc, args.k, keys), PartB(enc, args.k, keys)
-    if args.expform_a:
-        replace_gelu(a, lambda g: ExpFormGELU(), where=lambda n: re.search(r"stages\.3", n) is not None)
+    a, b = PartA(enc, args.k, keys, args.j), PartB(enc, args.k, keys, args.j)
+    if args.expform_a:  # stage 3 inside A is either stages.3 (k >= 3) or extra.* (k = 2, j > 0)
+        pat = r"stages\.3|extra\." if args.k == 2 else r"stages\.3"
+        n = replace_gelu(a, lambda g: ExpFormGELU(), where=lambda n: re.search(pat, n) is not None)
+        print("ExpForm GELUs in part A:", len(n))
     kernels = []
     if args.fuse_mbconv:
         sys.path.insert(0, os.path.join(os.path.dirname(HERE), "kernels"))

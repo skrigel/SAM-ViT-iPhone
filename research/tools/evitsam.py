@@ -215,3 +215,21 @@ class ExpFormGELU(nn.Module):
     def forward(self, x):
         t = torch.clamp(torch.abs(x), max=4.5)
         return torch.relu(x) - t / (1.0 + torch.exp(t * (self.C2 + (self.C2 * 0.044715) * (t * t))))
+
+
+class Fp16Encoder(nn.Module):
+    """Runs a pickled encoder in fp16 (PyTorch MPS) behind an fp32 interface, to separate generic fp16 rounding from
+    ANE-specific errors. Save with torch.save(Fp16Encoder(enc), path) and score with eval_coco.py --student path.
+    The exact rewrites of the converted models (fp16-safe attention, dtype-following resize) are applied on first use,
+    since a patched bound method does not survive pickling."""
+
+    def __init__(self, enc):
+        super().__init__()
+        self.enc = enc.half()
+        self.patched = False
+
+    def forward(self, x):
+        if not self.patched:
+            make_coreml_friendly(self.enc)
+            self.patched = True
+        return self.enc(x.half()).float()

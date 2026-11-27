@@ -53,3 +53,13 @@ date	commit	experiment	backend	unit	split	n	mIoU	ref_mIoU	delta	cos	latency_ms_p
 2026-11-26	7c95adf	peak_stream_64M	coreai	gpu	bench						1.21	keep	device memory bandwidth 222 GB/s (256 MB moved)
 2026-11-26	7c95adf	split_s3_ef	coreai-split	ane,gpu	dev	150	83.24	83.27	-0.03	0.9993		keep	stages 0-3 on ANE (ExpForm in stage 3) -> GPU: accurate, cos 0.9993
 2026-11-26	7c95adf	timing_split_s3_pipe	coreai-split	ane,gpu	bench						4.62	discard	stage 3 on ANE overshoots: part A 4.66 ms ANE vs B 3.11 ms GPU at k=2; pipelined 4.62 vs k=2 3.17 ms/frame
+2026-11-26	f1eedb1	split_s2j1	coreai-split	ane,gpu	dev	150	83.28	83.27	+0.01	0.9993		keep	split: stages 0-2 + first 1 stage-3 ops (ExpForm) on ANE -> GPU; accurate
+2026-11-26	f1eedb1	split_s2j2	coreai-split	ane,gpu	dev	150	83.26	83.27	-0.01	0.9994		keep	split: stages 0-2 + first 2 stage-3 ops (ExpForm) on ANE -> GPU; accurate
+2026-11-26	f1eedb1	split_s2j3	coreai-split	ane,gpu	dev	150	83.25	83.27	-0.02	0.9993		keep	split: stages 0-2 + first 3 stage-3 ops (ExpForm) on ANE -> GPU; accurate
+2026-11-26	f1eedb1	timing_split_s2j1_pipe	coreai-split	ane,gpu	dev	150	83.28	83.27	+0.01	0.9993	3.16	keep	pipelined timing: 3.16 ms/frame, 161 mJ (k=2: 3.18, 149): stage-3 downsample alone costs 1.7 ms on ANE
+2026-11-26	f1eedb1	timing_split_s2j2_pipe	coreai-split	ane,gpu	dev	150	83.26	83.27	-0.01	0.9994	3.52	keep	pipelined: 3.52 ms/frame, 139 mJ
+2026-11-26	f1eedb1	timing_split_s2j3_pipe	coreai-split	ane,gpu	dev	150	83.25	83.27	-0.02	0.9993	3.97	keep	pipelined: 3.97 ms/frame, 120 mJ (energy-leaning operating point)
+2026-11-26	f1eedb1	relu_diag_torch_fp16	torch	gpu	dev	150	82.35	83.27	-0.92	0.8320		keep	ReLU student in torch fp16 (MPS): no loss vs fp32 (82.28) -> ANE gap is not generic fp16 rounding
+2026-11-26	f1eedb1	teacher_torch_fp16	torch	gpu	dev	150	83.24	83.27	-0.02	0.9997		keep	teacher in torch fp16 (MPS), reference for the diagnosis
+2026-11-26	f1eedb1	relu_diag_coreai_gpu	coreai	gpu	dev	150	82.29	83.27	-0.97	0.9737		keep	ReLU student Core AI fp16 GPU = fp32 score
+2026-11-26	f1eedb1	relu_diag_coreai_ane	coreai	ane	dev	150	81.94	83.27	-1.32	0.9646	7.16	keep	ReLU student Core AI ANE: -1.32, cos_min 0.35 (outlier images collapse); 7.16 ms, 76 mJ

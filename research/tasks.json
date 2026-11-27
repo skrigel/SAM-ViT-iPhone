@@ -41,7 +41,7 @@
    "priority": 2,
    "title": "Proposal 4.1: ReLU student distilled from the GELU teacher (L2 on embeddings), fixed wall-clock budget",
    "status": "done",
-   "notes": "120-min awake run: torch 82.55 (-1.00), Core ML ANE fp16 81.02 (-2.54) at 8.34 ms. ExpForm (83.46, 13.2 ms) stays default."
+   "notes": "120-min awake run: torch 82.55 (-1.00), Core ML ANE fp16 81.02 (-2.54) at 8.34 ms. ExpForm (83.46, 13.2 ms) stays default. ANE gap is ANE-specific (torch/Core AI GPU fp16 = fp32), outlier images collapse (cos_min 0.35)."
   },
   {
    "id": "coreai-convert",
@@ -104,7 +104,7 @@
    "priority": 2,
    "title": "Manual GPU+ANE split pipeline (stages 0-2 ANE, rest GPU), sequential and pipelined",
    "status": "done",
-   "notes": "pipelined ANE(stages 0-2)||GPU: 3.17 ms/frame, 154 mJ vs GPU-only 4.29 ms, 206 mJ; sequential 11.6 ms; k=3 (stage 3 on ANE) overshoots: 4.62 ms/frame. k=2 best."
+   "notes": "pipelined ANE(stages 0-2)||GPU: 3.17 ms/frame, 154 mJ vs GPU-only 4.29 ms, 206 mJ; sequential 11.6 ms; k=3 (stage 3 on ANE) overshoots: 4.62 ms/frame. k=2 best.; block-level splits (j=1..3) accurate, none faster than k=2; j trades throughput for energy (3.97 ms/120 mJ at j=3)"
   }
  ]
 }
